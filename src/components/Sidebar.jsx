@@ -1,0 +1,36 @@
+import { UserIcon, UsersIcon, DocumentDuplicateIcon, BriefcaseIcon } from './Icons';
+
+const tabs = [
+  { id: 'individual', label: 'Justificante Individual', Icon: UserIcon },
+  { id: 'grupal', label: 'Justificante Grupal (Lista)', Icon: UsersIcon },
+  { id: 'masivo', label: 'Justificante Masivo', Icon: DocumentDuplicateIcon },
+  { id: 'practica', label: 'Oficio de Práctica', Icon: BriefcaseIcon },
+];
+
+export default function Sidebar({ currentTab, onTabChange }) {
+  return (
+    <aside className="w-64 bg-gob-maroon text-white flex-shrink-0 hidden md:flex flex-col shadow-xl z-20">
+      <div className="p-6 border-b border-white/20">
+        <h2 className="text-xl font-bold tracking-wider">ENRLV</h2>
+        <p className="text-xs text-gray-300 mt-1">Gestión Documental</p>
+      </div>
+      <nav className="flex-1 py-6 space-y-1">
+        {tabs.map(({ id, label, Icon }) => (
+          <button
+            key={id}
+            onClick={() => onTabChange(id)}
+            className={`sidebar-link w-full text-left px-6 py-3 flex items-center space-x-3 ${
+              currentTab === id ? 'active bg-gob-gold text-white pl-6' : ''
+            }`}
+          >
+            <Icon className="w-5 h-5" />
+            <span className="text-sm font-medium">{label}</span>
+          </button>
+        ))}
+      </nav>
+      <div className="p-4 border-t border-white/20 text-xs text-center text-gray-300">
+        &copy; 2026 ENRLV - El Mexe
+      </div>
+    </aside>
+  );
+}

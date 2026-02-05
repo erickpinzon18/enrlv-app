@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+/* Custom Tailwind Theme */
+@theme {
+  --color-gob-maroon: #691c32;
+  --color-gob-gold: #bc955c;
+  --color-gob-grey: #54565a;
+  --font-sans: "Montserrat", sans-serif;
+}
+
+/* Custom Styles */
+.form-input {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus {
+  border-color: #691c32;
+  box-shadow: 0 0 0 2px rgba(105, 28, 50, 0.2);
+}
+
+.sidebar-link {
+  transition: all 0.2s;
+}
+
+.sidebar-link:hover,
+.sidebar-link.active {
+  background-color: #bc955c;
+  color: white;
+  padding-left: 1.5rem;
+}
