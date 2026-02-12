@@ -39,8 +39,11 @@ export function generatePDF(currentType, formData, studentList, onError) {
       d.text("C.C.T. 13DNL0007B", x, y);
     };
 
-    const drawFooter = (d, isCopia) => {
-      let y = 260;
+    // drawFooter: always at the bottom of the page
+    const drawFooter = (d, isCopia, label) => {
+      const pageHeight = d.internal.pageSize.getHeight();
+      let y = pageHeight - 37; // always anchored to bottom
+
       d.setFontSize(7);
       d.setTextColor(100);
       d.setFont("helvetica", "normal");
@@ -58,7 +61,7 @@ export function generatePDF(currentType, formData, studentList, onError) {
         d.text("ARCHIVO - COPIA", 195, y, { align: "right" });
       } else {
         d.setTextColor(105, 28, 50);
-        d.text("ALUMNO - ORIGINAL", 195, y, { align: "right" });
+        d.text(label || "ALUMNO - ORIGINAL", 195, y, { align: "right" });
       }
       y += 6;
       d.setFillColor(105, 28, 50);
@@ -84,6 +87,18 @@ export function generatePDF(currentType, formData, studentList, onError) {
       return qr.toDataURL();
     };
 
+    // Helper: ensures there is enough space on the page for closing block
+    // (signature ~30mm + QR ~25mm + footer ~25mm = ~80mm)
+    const ensureClosingSpace = (d, currentY, neededHeight) => {
+      const pageHeight = d.internal.pageSize.getHeight();
+      if (currentY + neededHeight > pageHeight - 10) {
+        d.addPage();
+        drawHeader(d);
+        return 50;
+      }
+      return currentY;
+    };
+
     // ── INDIVIDUAL / PRACTICA: One PDF per student ──
 
     if (currentType === 'individual' || currentType === 'practica') {
@@ -106,7 +121,6 @@ export function generatePDF(currentType, formData, studentList, onError) {
       targets.forEach((student, index) => {
         const d = new jsPDF();
 
-        // Increment folio for each student
         const baseFolio = parseInt(commonFolio, 10) || 0;
         const studentFolio = String(baseFolio + index).padStart(4, '0');
 
@@ -174,15 +188,12 @@ export function generatePDF(currentType, formData, studentList, onError) {
           drawFooter(d, isCopia);
         };
 
-        // Page 1: Original, Page 2: Copia
         drawPage(false);
         drawPage(true);
 
-        // Build filename with student name
         const cleanName = (student.nombre || 'ALUMNO').replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '').trim().replace(/\s+/g, '_');
         const pdfName = `ENRLV_${currentType.toUpperCase()}_${cleanName}_FOLIO_${studentFolio}.pdf`;
 
-        // Stagger downloads so browser doesn't block them
         setTimeout(() => {
           d.save(pdfName);
         }, index * 500);
@@ -236,14 +247,18 @@ export function generatePDF(currentType, formData, studentList, onError) {
               theme: 'grid',
               headStyles: { fillColor: [105, 28, 50], fontSize: 8 },
               bodyStyles: { fontSize: 8 },
-              margin: { left: 15, right: 15, bottom: 40 },
+              margin: { left: 15, right: 15, bottom: 80 },
             });
-            y = doc.lastAutoTable.finalY + 20;
+            y = doc.lastAutoTable.finalY + 10;
           } else {
             y += 20;
           }
 
           if (isNaN(y)) y = 200;
+
+          // Ensure space for signature + QR + footer (~80mm needed)
+          y = ensureClosingSpace(doc, y, 80);
+
           drawSignature(doc, y);
 
           try {
@@ -252,6 +267,9 @@ export function generatePDF(currentType, formData, studentList, onError) {
           } catch (e) {
             console.error("QR Error", e);
           }
+
+          // Footer always at page bottom
+          drawFooter(doc, isCopia);
 
         } else if (currentType === 'masivo') {
           const { dirigido = "A QUIEN CORRESPONDA", cuerpo = "" } = formData;
@@ -265,7 +283,7 @@ export function generatePDF(currentType, formData, studentList, onError) {
           y += split.length * 6 + 15;
           doc.text("Agradeciendo su atención, quedo de usted.", 15, y);
 
-          if (y > 220) { doc.addPage(); y = 40; }
+          y = ensureClosingSpace(doc, y, 80);
 
           drawSignature(doc, y + 30);
 
@@ -275,12 +293,13 @@ export function generatePDF(currentType, formData, studentList, onError) {
           } catch (e) { console.error(e); }
 
           doc.setFontSize(7);
-          doc.text("C.c.p Coordinación Administrativa.", 15, 240);
-          doc.text("C.c.p. Servicios escolares", 15, 244);
-          doc.text("C.c.p. Archivo", 15, 248);
-        }
+          doc.text("C.c.p Coordinación Administrativa.", 15, y + 60);
+          doc.text("C.c.p. Servicios escolares", 15, y + 64);
+          doc.text("C.c.p. Archivo", 15, y + 68);
 
-        drawFooter(doc, isCopia);
+          // Footer always at page bottom, label: just "ORIGINAL" for masivo
+          drawFooter(doc, isCopia, "ORIGINAL");
+        }
       };
 
       drawFullPage(false);

@@ -46,5 +46,261 @@
     "nom": "VIRIDIANA FUENTES BLANCO",
     "sem": "SÉPTIMO",
     "gpo": "A"
+  },
+  {
+    "mat": "268304180000",
+    "nom": "HUGO JESUS GARCIA CASTILLO",
+    "sem": "SÉPTIMO",
+    "gpo": "A"
+  },
+
+  {
+    "mat": "241305120001",
+    "nom": "DANIELA ITZEL HERNANDEZ RUIZ",
+    "sem": "PRIMERO",
+    "gpo": "A"
+  },
+  {
+    "mat": "241305120002",
+    "nom": "MARIANA GUADALUPE SOTO RAMIREZ",
+    "sem": "PRIMERO",
+    "gpo": "B"
+  },
+  {
+    "mat": "241305120003",
+    "nom": "JOSUE ALEJANDRO MARTINEZ FLORES",
+    "sem": "PRIMERO",
+    "gpo": "C"
+  },
+  {
+    "mat": "241305120004",
+    "nom": "FERNANDA ABIGAIL CRUZ MENDOZA",
+    "sem": "PRIMERO",
+    "gpo": "A"
+  },
+  {
+    "mat": "241305120005",
+    "nom": "BRYAN EDUARDO VELAZQUEZ GONZALEZ",
+    "sem": "PRIMERO",
+    "gpo": "B"
+  },
+  {
+    "mat": "241305120006",
+    "nom": "XIMENA PAOLA NAVARRO ORTIZ",
+    "sem": "PRIMERO",
+    "gpo": "C"
+  },
+  {
+    "mat": "241305120007",
+    "nom": "EMMANUEL JESUS PEREZ HERRERA",
+    "sem": "PRIMERO",
+    "gpo": "A"
+  },
+  {
+    "mat": "241305120008",
+    "nom": "VALERIA FERNANDA CASTILLO LUNA",
+    "sem": "PRIMERO",
+    "gpo": "B"
+  },
+
+  {
+    "mat": "241305130001",
+    "nom": "MIGUEL ANGEL SANCHEZ TORRES",
+    "sem": "TERCERO",
+    "gpo": "A"
+  },
+  {
+    "mat": "241305130002",
+    "nom": "DIEGO ARMANDO RAMOS AGUILAR",
+    "sem": "TERCERO",
+    "gpo": "B"
+  },
+  {
+    "mat": "241305130003",
+    "nom": "KAREN DANIELA MORALES VARGAS",
+    "sem": "TERCERO",
+    "gpo": "C"
+  },
+  {
+    "mat": "241305130004",
+    "nom": "JARED ISAAC GOMEZ PAREDES",
+    "sem": "TERCERO",
+    "gpo": "A"
+  },
+  {
+    "mat": "241305130005",
+    "nom": "PAOLA ANDREA VAZQUEZ ROSALES",
+    "sem": "TERCERO",
+    "gpo": "B"
+  },
+  {
+    "mat": "241305130006",
+    "nom": "LUIS FERNANDO HERNANDEZ SERRANO",
+    "sem": "TERCERO",
+    "gpo": "C"
+  },
+  {
+    "mat": "241305130007",
+    "nom": "SOFIA NATALIA RANGEL MORA",
+    "sem": "TERCERO",
+    "gpo": "A"
+  },
+  {
+    "mat": "241305130008",
+    "nom": "IVAN ELIAS CONTRERAS SILVA",
+    "sem": "TERCERO",
+    "gpo": "B"
+  },
+  {
+    "mat": "241305130009",
+    "nom": "DULCE MARIA CERVANTES ROJAS",
+    "sem": "TERCERO",
+    "gpo": "C"
+  },
+  {
+    "mat": "241305130010",
+    "nom": "CRISTIAN YAIR FLORES SALAS",
+    "sem": "TERCERO",
+    "gpo": "A"
+  },
+  {
+    "mat": "241305130011",
+    "nom": "MELISSA ELIZABETH NUNEZ ARRIAGA",
+    "sem": "TERCERO",
+    "gpo": "B"
+  },
+  {
+    "mat": "241305130012",
+    "nom": "RODRIGO SEBASTIAN LOPEZ ARELLANO",
+    "sem": "TERCERO",
+    "gpo": "C"
+  },
+
+  {
+    "mat": "231304190001",
+    "nom": "ALEXA GUADALUPE BARRERA CORTES",
+    "sem": "QUINTO",
+    "gpo": "A"
+  },
+  {
+    "mat": "231304190002",
+    "nom": "ENRIQUE JAVIER GARCIA MEJIA",
+    "sem": "QUINTO",
+    "gpo": "B"
+  },
+  {
+    "mat": "231304190003",
+    "nom": "CAMILA RENATA PONCE HINOJOSA",
+    "sem": "QUINTO",
+    "gpo": "C"
+  },
+  {
+    "mat": "231304190004",
+    "nom": "JOSE MANUEL RIVERA NAVA",
+    "sem": "QUINTO",
+    "gpo": "A"
+  },
+  {
+    "mat": "231304190005",
+    "nom": "ANA PAULINA SALAZAR MONROY",
+    "sem": "QUINTO",
+    "gpo": "B"
+  },
+  {
+    "mat": "231304190006",
+    "nom": "GAEL EMILIANO CARRILLO LARA",
+    "sem": "QUINTO",
+    "gpo": "C"
+  },
+  {
+    "mat": "231304190007",
+    "nom": "ITZEL SOFIA ORTEGA VILLALOBOS",
+    "sem": "QUINTO",
+    "gpo": "A"
+  },
+  {
+    "mat": "231304190008",
+    "nom": "ANDRES FELIPE VARGAS DIAZ",
+    "sem": "QUINTO",
+    "gpo": "B"
+  },
+  {
+    "mat": "231304190009",
+    "nom": "REGINA GUADALUPE HERRERA LARIOS",
+    "sem": "QUINTO",
+    "gpo": "C"
+  },
+
+  {
+    "mat": "221310800001",
+    "nom": "KARLA YAZMIN ROMERO FLORES",
+    "sem": "SÉPTIMO",
+    "gpo": "A"
+  },
+  {
+    "mat": "221310800002",
+    "nom": "ALAN ALEXIS MENDOZA BUSTOS",
+    "sem": "SÉPTIMO",
+    "gpo": "B"
+  },
+  {
+    "mat": "221310800003",
+    "nom": "DANNA PAOLA GUTIERREZ SANCHEZ",
+    "sem": "SÉPTIMO",
+    "gpo": "C"
+  },
+  {
+    "mat": "221310800004",
+    "nom": "EDUARDO ALONSO CORTES LEON",
+    "sem": "SÉPTIMO",
+    "gpo": "A"
+  },
+  {
+    "mat": "221310800005",
+    "nom": "MARCO ANTONIO HINOJOSA RIOS",
+    "sem": "SÉPTIMO",
+    "gpo": "B"
+  },
+  {
+    "mat": "221310800006",
+    "nom": "FATIMA GUADALUPE PEREZ LUGO",
+    "sem": "SÉPTIMO",
+    "gpo": "C"
+  },
+  {
+    "mat": "221310800007",
+    "nom": "SANTIAGO EMILIO SANDOVAL VEGA",
+    "sem": "SÉPTIMO",
+    "gpo": "A"
+  },
+  {
+    "mat": "221310800008",
+    "nom": "BRENDA NICOLE CARRASCO RAMIREZ",
+    "sem": "SÉPTIMO",
+    "gpo": "B"
+  },
+  {
+    "mat": "221310800009",
+    "nom": "OSVALDO JESUS VILLANUEVA LUNA",
+    "sem": "SÉPTIMO",
+    "gpo": "C"
+  },
+  {
+    "mat": "221310800010",
+    "nom": "NATALIA BELEN ZUÑIGA CASTRO",
+    "sem": "SÉPTIMO",
+    "gpo": "A"
+  },
+  {
+    "mat": "221310800011",
+    "nom": "HECTOR DANIEL ESCOBEDO REYES",
+    "sem": "SÉPTIMO",
+    "gpo": "B"
+  },
+  {
+    "mat": "221310800012",
+    "nom": "MIA FERNANDA PADILLA CORONA",
+    "sem": "SÉPTIMO",
+    "gpo": "C"
   }
 ]

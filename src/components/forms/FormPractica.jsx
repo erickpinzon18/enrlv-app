@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import schoolsData from '../../data/schools.json';
 import studentsData from '../../data/students.json';
 
-export default function FormPractica({ data, onChange }) {
+export default function FormPractica({ data, onChange, showAlert }) {
   const [searchMatricula, setSearchMatricula] = useState('');
   const [selectedSchoolId, setSelectedSchoolId] = useState('');
 
-  // Auto-fill student
+  // Auto-fill student from catalog
   useEffect(() => {
     if (searchMatricula.length >= 5) {
       const student = studentsData.find(s => s.mat === searchMatricula);
@@ -18,28 +18,30 @@ export default function FormPractica({ data, onChange }) {
     }
   }, [searchMatricula]);
 
-  // Auto-fill school
+  // Auto-fill school from catalog
   const handleSchoolChange = (e) => {
     const id = e.target.value;
     setSelectedSchoolId(id);
     const school = schoolsData.find(s => s.id == id);
     if (school) {
-        onChange('director', school.dir);
-        onChange('escuela', school.esc);
+      onChange('director', school.dir);
+      onChange('escuela', school.esc);
     } else {
-        onChange('director', '');
-        onChange('escuela', '');
+      onChange('director', '');
+      onChange('escuela', '');
     }
   };
 
+  // Date → auto-generate formatted text
   const handleDateChange = (e) => {
-      const dateVal = e.target.value;
-      const dateObj = new Date(dateVal + 'T00:00:00');
-      const options = { weekday: 'long', day: 'numeric', month: 'long' };
-      const formatted = dateObj.toLocaleDateString('es-ES', options); // "martes 22 de octubre"
-      
-      onChange('rawDate', dateVal);
-      onChange('fechaIna', formatted);
+    const dateVal = e.target.value;
+    if (!dateVal) return;
+    const dateObj = new Date(dateVal + 'T00:00:00');
+    const options = { weekday: 'long', day: 'numeric', month: 'long' };
+    const formatted = dateObj.toLocaleDateString('es-ES', options);
+
+    onChange('rawDate', dateVal);
+    onChange('fechaIna', formatted);
   };
 
   return (
@@ -51,50 +53,53 @@ export default function FormPractica({ data, onChange }) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="col-span-2">
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
-                Seleccionar Escuela (Catálogo)
-            </label>
-            <select 
-                className="form-input"
-                onChange={handleSchoolChange}
-                value={selectedSchoolId}
-            >
-                <option value="">Seleccione una escuela primaria...</option>
-                {schoolsData.map(s => (
-                    <option key={s.id} value={s.id}>{s.esc}</option>
-                ))}
-            </select>
+      {/* ── Escuela ── */}
+      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4">
+        <h4 className="text-xs font-bold text-gray-700 uppercase mb-3">Datos de la Escuela</h4>
+
+        <div className="mb-3">
+          <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+            Seleccionar Escuela (Catálogo)
+          </label>
+          <select
+            className="form-input"
+            onChange={handleSchoolChange}
+            value={selectedSchoolId}
+          >
+            <option value="">Seleccione una escuela primaria...</option>
+            {schoolsData.map(s => (
+              <option key={s.id} value={s.id}>{s.esc}</option>
+            ))}
+          </select>
         </div>
 
-        <div className="col-span-2 md:grid md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
           <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">
+            <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">
               Director (Auto)
             </label>
             <input
               type="text"
               value={data.director}
               readOnly
-              className="form-input bg-gray-100"
+              className="form-input bg-gray-100 text-sm"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">
+            <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">
               Escuela (Auto)
             </label>
             <input
               type="text"
               value={data.escuela}
               readOnly
-              className="form-input bg-gray-100"
+              className="form-input bg-gray-100 text-sm"
             />
           </div>
         </div>
 
-        <div className="col-span-2">
-          <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
             Atención A (Docente Titular)
           </label>
           <input
@@ -107,64 +112,75 @@ export default function FormPractica({ data, onChange }) {
         </div>
       </div>
 
-      <div className="bg-red-50 p-4 rounded-lg mb-6 border border-red-100">
-        <h4 className="text-sm font-bold text-gob-maroon mb-3">Datos del Practicante</h4>
-        
-        {/* Search for Practicante */}
-        <div className="flex gap-2 items-end mb-4">
-             <datalist id="catalogo-alumnos-prac">
-                {studentsData.map(s => (
-                    <option key={s.mat} value={s.mat}>{s.nom}</option>
-                ))}
-            </datalist>
-            <div className="flex-1">
-                <label className="text-[10px] uppercase font-bold text-gob-maroon">Buscar Matrícula</label>
-                <input 
-                    list="catalogo-alumnos-prac"
-                    className="form-input bg-white text-sm"
-                    value={searchMatricula}
-                    onChange={(e) => setSearchMatricula(e.target.value)}
-                    placeholder="Buscar..."
-                />
-            </div>
-             <div className="flex-[2]">
-                <label className="text-[10px] uppercase font-bold text-gob-maroon">Nombre Alumno</label>
-                <input 
-                    className="form-input bg-gray-100 text-sm"
-                    value={data.alumno}
-                    readOnly
-                />
-            </div>
-            <div className="w-24">
-                <label className="text-[10px] uppercase font-bold text-gob-maroon">Sem</label>
-                <input 
-                    className="form-input bg-gray-100 text-sm"
-                    value={data.pracSemestre}
-                    readOnly
-                />
-            </div>
+      {/* ── Practicante ── */}
+      <div className="bg-red-50 p-4 rounded-lg border border-red-100 mb-4">
+        <h4 className="text-xs font-bold text-gob-maroon uppercase mb-3">Datos del Practicante</h4>
+
+        <datalist id="catalogo-alumnos-prac">
+          {studentsData.map(s => (
+            <option key={s.mat} value={s.mat}>{s.nom}</option>
+          ))}
+        </datalist>
+
+        <div className="flex flex-wrap gap-3 items-end mb-4">
+          <div className="flex-1 min-w-[140px]">
+            <label className="text-[10px] uppercase font-bold text-gob-maroon block">Buscar Matrícula</label>
+            <input
+              list="catalogo-alumnos-prac"
+              className="form-input bg-white text-sm"
+              value={searchMatricula}
+              onChange={(e) => setSearchMatricula(e.target.value)}
+              placeholder="Ej. 241305120001"
+            />
+          </div>
+          <div className="flex-[2] min-w-[200px]">
+            <label className="text-[10px] uppercase font-bold text-gob-maroon block">Nombre Alumno</label>
+            <input
+              className="form-input bg-gray-100 text-sm"
+              value={data.alumno}
+              readOnly
+              placeholder="Se llenará automáticamente..."
+            />
+          </div>
+          <div className="w-28">
+            <label className="text-[10px] uppercase font-bold text-gob-maroon block">Semestre</label>
+            <input
+              className="form-input bg-gray-100 text-sm"
+              value={data.pracSemestre}
+              readOnly
+            />
+          </div>
         </div>
+
+        <input type="hidden" value={data.pracMatricula} />
+      </div>
+
+      {/* ── Fecha ── */}
+      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+        <h4 className="text-xs font-bold text-gray-700 uppercase mb-3">Fecha de Inasistencia</h4>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-             <input type="hidden" value={data.pracMatricula} />
-            <label className="block text-xs font-bold text-gob-maroon uppercase mb-1">
-              Fecha Inasistencia
+            <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">
+              Seleccionar Fecha
             </label>
-             <input
+            <input
               type="date"
+              value={data.rawDate || ''}
               onChange={handleDateChange}
-              className="form-input bg-white mb-2"
+              className="form-input bg-white"
             />
-            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
+          </div>
+          <div>
+            <label className="block text-[10px] text-gray-400 uppercase font-bold mb-1">
               Texto Generado
             </label>
             <input
               type="text"
               value={data.fechaIna}
-              onChange={(e) => onChange('fechaIna', e.target.value)}
-              className="form-input bg-white border-red-200"
-              placeholder="Ej. martes 22 de octubre"
+              disabled
+              className="form-input bg-gray-100"
+              placeholder="Se generará automáticamente..."
             />
           </div>
         </div>

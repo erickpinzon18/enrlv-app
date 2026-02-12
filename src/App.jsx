@@ -27,14 +27,12 @@ function App() {
   });
 
   const [grupalData, setGrupalData] = useState({
-    fechaJust: '', horario: '', motivo: 'Por citado a miembro de la base estudiantil por guardia', rawDate: ''
+    fechaJust: '', horario: '', motivo: 'Por citado a miembro de la base estudiantil por guardia', rawDate: '', rawDates: []
   });
 
   const [masivoData, setMasivoData] = useState({
     dirigido: 'CUERPO ACADÉMICO - ESCUELA NORMAL RURAL LUIS VILLARREAL',
     cuerpo: 'Por medio del presente envío un afectuoso saludo a todos y todas...',
-    fechaMas: 'Francisco I. Madero, Hidalgo, a 21 de Octubre de 2026',
-    folioMas: 'ENRLV/CD/0223/2026',
   });
 
   const [practicaData, setPracticaData] = useState({
@@ -77,11 +75,12 @@ function App() {
         }
         datesToCheck = individualData.rawDates;
     } else if (currentTab === 'grupal') {
-        if (!grupalData.rawDate) {
-            await showAlert('Debe seleccionar la fecha de justificación.', { variant: 'warning' });
+        const grupalDates = grupalData.rawDates || [];
+        if (grupalDates.length === 0 && !grupalData.rawDate) {
+            await showAlert('Debe seleccionar al menos una fecha de justificación.', { variant: 'warning' });
             return false;
         }
-        datesToCheck = [grupalData.rawDate];
+        datesToCheck = grupalDates.length > 0 ? grupalDates : [grupalData.rawDate];
     } else if (currentTab === 'practica') {
         if (!practicaData.rawDate) {
             await showAlert('Debe seleccionar la fecha de inasistencia.', { variant: 'warning' });
@@ -152,11 +151,23 @@ function App() {
           return;
       }
     } else if (currentTab === 'masivo') {
+      if (!masivoData.cuerpo || masivoData.cuerpo.trim().length < 10) {
+        await showAlert('El cuerpo del texto está vacío o es muy corto.', { variant: 'warning' });
+        return;
+      }
       formData = { ...formData, ...masivoData };
     } else if (currentTab === 'practica') {
       formData = { ...formData, ...practicaData };
       if (!practicaData.alumno) {
           await showAlert('Seleccione un estudiante válido.', { variant: 'warning' });
+          return;
+      }
+      if (!practicaData.escuela) {
+          await showAlert('Seleccione una escuela del catálogo.', { variant: 'warning' });
+          return;
+      }
+      if (!practicaData.fechaIna) {
+          await showAlert('Seleccione la fecha de inasistencia.', { variant: 'warning' });
           return;
       }
     }
@@ -194,6 +205,7 @@ function App() {
           <FormMasivo
             data={masivoData}
             onChange={(key, value) => setMasivoData(prev => ({ ...prev, [key]: value }))}
+            showAlert={showAlert}
           />
         );
       case 'practica':
@@ -201,6 +213,7 @@ function App() {
           <FormPractica
             data={practicaData}
             onChange={(key, value) => setPracticaData(prev => ({ ...prev, [key]: value }))}
+            showAlert={showAlert}
           />
         );
       default:

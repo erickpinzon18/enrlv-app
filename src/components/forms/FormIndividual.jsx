@@ -322,13 +322,14 @@ export default function FormIndividual({ data, onChange, studentList, onAddStude
             </div>
 
           <label className="block text-xs font-bold text-gray-400 uppercase mb-1">
-            Texto Generado (Editable si es necesario)
+            Texto Generado 
           </label>
           <input
             type="text"
             value={data.fechas}
             onChange={(e) => onChange('fechas', e.target.value)}
             className="form-input bg-gray-50"
+            disabled
             placeholder="Se generará automáticamente..."
           />
         </div>
