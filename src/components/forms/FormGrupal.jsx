@@ -2,7 +2,7 @@ import { useState } from 'react';
 import studentsData from '../../data/students.json';
 import { PlusIcon, TrashIcon } from '../Icons';
 
-export default function FormGrupal({ data, onChange, studentList, onAddStudent, onRemoveStudent }) {
+export default function FormGrupal({ data, onChange, studentList, onAddStudent, onRemoveStudent, showAlert }) {
   const [filterSem, setFilterSem] = useState('');
   const [filterGpo, setFilterGpo] = useState('');
 
@@ -18,7 +18,7 @@ export default function FormGrupal({ data, onChange, studentList, onAddStudent, 
 
   const handleLoadGroup = () => {
     if (!filterSem || !filterGpo) {
-      alert('Seleccione Semestre y Grupo');
+      if (showAlert) showAlert('Seleccione Semestre y Grupo', { variant: 'warning' });
       return;
     }
 
@@ -27,7 +27,7 @@ export default function FormGrupal({ data, onChange, studentList, onAddStudent, 
     );
 
     if (filtered.length === 0) {
-      alert('No hay alumnos en ese grupo en el catálogo.');
+      if (showAlert) showAlert('No hay alumnos en ese grupo en el catálogo.', { variant: 'warning' });
       return;
     }
 
@@ -213,7 +213,7 @@ function AddStudentForm({ onAddStudent }) {
       document.getElementById('manual-sem-grup').value = '';
       document.getElementById('manual-gpo-grup').value = '';
     } else {
-      alert('Ingrese alumno válido');
+      if (showAlert) showAlert('Ingrese alumno válido', { variant: 'warning' });
     }
   };
 

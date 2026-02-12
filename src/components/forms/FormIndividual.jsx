@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import studentsData from '../../data/students.json';
 import { PlusIcon, TrashIcon } from '../Icons';
 
-export default function FormIndividual({ data, onChange, studentList, onAddStudent, onRemoveStudent }) {
+export default function FormIndividual({ data, onChange, studentList, onAddStudent, onRemoveStudent, showAlert }) {
   const [searchMatricula, setSearchMatricula] = useState('');
   const [foundStudent, setFoundStudent] = useState(null);
   
@@ -66,27 +66,52 @@ export default function FormIndividual({ data, onChange, studentList, onAddStude
           return;
       }
 
-      const options = { day: 'numeric', month: 'long', year: 'numeric' }; // e.g. "21 de octubre de 2026"
-      // We want: "el día 21 de octubre de 2026" or "los días 21 y 22 de octubre de 2026"
-      // Grouping by month/year is complex logic, for MVP let's list them.
-      // But user wants nice text. Let's try to be smart.
+      const options = { day: 'numeric', month: 'long', year: 'numeric' }; 
       
-      // Simple formatter:
-      const formattedDates = newDates.map(d => {
-          const dateObj = new Date(d + 'T00:00:00'); // appended time to avoid TZ issues
-          return dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
-      });
-
+      // Parse dates to verify consecutiveness
+      const sortedDates = newDates.map(d => new Date(d + 'T00:00:00')).sort((a, b) => a - b);
+      
       let text = "";
-      if (newDates.length === 1) {
-           const dateObj = new Date(newDates[0] + 'T00:00:00');
-           text = `el día ${dateObj.toLocaleDateString('es-ES', options)}`;
+      if (sortedDates.length === 1) {
+           text = `el día ${sortedDates[0].toLocaleDateString('es-ES', options)}`;
       } else {
-          // "los días 10 de octubre, 11 de octubre"
-          const last = formattedDates.pop();
-          const rest = formattedDates.join(', ');
-          const year = new Date(newDates[0]).getFullYear(); // Assume same year for simplicity or append to last
-          text = `los días ${rest} y ${last} de ${year}`;
+          // Check if consecutive
+          let isConsecutive = true;
+          for (let i = 0; i < sortedDates.length - 1; i++) {
+              const diffTime = Math.abs(sortedDates[i+1] - sortedDates[i]);
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+              if (diffDays > 1) {
+                  isConsecutive = false;
+                  break;
+              }
+          }
+
+          if (isConsecutive && sortedDates.length >= 2) { // User said "si son 3", but usually range implies >= 2. Let's start with user request "3".
+              // Actually user said "si son 3". Let's apply for >= 2 ranges generally or strictly >= 3?
+              // "si son 3 fechas ponga del (fecha inicio) al (fecha fin)". 
+              // Usually ranges are better for >=2 consecutive days. 
+              // I'll apply for >= 2 consecutive to be consistent with "Rango".
+              
+              const first = sortedDates[0];
+              const last = sortedDates[sortedDates.length - 1];
+              
+              const firstStr = first.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+              const lastStr = last.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+              
+              // If same month: "del 20 al 22 de mayo de 2024"
+              if (first.getMonth() === last.getMonth() && first.getFullYear() === last.getFullYear()) {
+                  text = `del ${first.getDate()} al ${lastStr}`;
+              } else {
+                  text = `del ${firstStr} al ${lastStr}`;
+              }
+          } else {
+              // Not consecutive or simple list
+              const formattedDates = sortedDates.map(d => d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' }));
+              const last = formattedDates.pop();
+              const rest = formattedDates.join(', ');
+              const year = sortedDates[0].getFullYear();
+              text = `los días ${rest} y ${last} de ${year}`;
+          }
       }
       onChange('fechas', text);
   };
@@ -247,7 +272,7 @@ export default function FormIndividual({ data, onChange, studentList, onAddStude
                                 const end = new Date(dateEndVal + 'T00:00:00');
                                 
                                 if (current > end) {
-                                    alert("Fecha inicio debe ser menor a fecha fin");
+                                    if (showAlert) showAlert("Fecha inicio debe ser menor a fecha fin", { variant: 'warning' });
                                     return;
                                 }
 

@@ -8,10 +8,12 @@ import FormPractica from './components/forms/FormPractica';
 import { DownloadIcon } from './components/Icons';
 import { generatePDF } from './utils/pdfGenerator';
 import { useFolios } from './hooks/useFolios';
+import { useModal } from './components/Modal';
 
 function App() {
   const [currentTab, setCurrentTab] = useState('individual');
   const { folios, incrementFolio, getFolioDisplay } = useFolios();
+  const { modalState, closeModal, showAlert, showPassword, Modal } = useModal();
   
   // Lists state
   const [studentLists, setStudentLists] = useState({
@@ -33,8 +35,6 @@ function App() {
     cuerpo: 'Por medio del presente envío un afectuoso saludo a todos y todas...',
     fechaMas: 'Francisco I. Madero, Hidalgo, a 21 de Octubre de 2026',
     folioMas: 'ENRLV/CD/0223/2026',
-    // Masivo dates usually in body text, difficult to automate without regex. 
-    // User didn't request specific date picker for masivo body yet.
   });
 
   const [practicaData, setPracticaData] = useState({
@@ -66,31 +66,29 @@ function App() {
     }));
   };
 
-  const validateSecurity = () => {
+  const validateSecurity = async () => {
     // 1. Determine which dates to check
     let datesToCheck = [];
 
     if (currentTab === 'individual') {
         if (!individualData.rawDates || individualData.rawDates.length === 0) {
-            alert('Debe seleccionar al menos una fecha para justificar.');
+            await showAlert('Debe seleccionar al menos una fecha para justificar.', { variant: 'warning' });
             return false;
         }
         datesToCheck = individualData.rawDates;
     } else if (currentTab === 'grupal') {
         if (!grupalData.rawDate) {
-            alert('Debe seleccionar la fecha de justificación.');
+            await showAlert('Debe seleccionar la fecha de justificación.', { variant: 'warning' });
             return false;
         }
         datesToCheck = [grupalData.rawDate];
     } else if (currentTab === 'practica') {
         if (!practicaData.rawDate) {
-            alert('Debe seleccionar la fecha de inasistencia.');
+            await showAlert('Debe seleccionar la fecha de inasistencia.', { variant: 'warning' });
             return false;
         }
         datesToCheck = [practicaData.rawDate];
     } else {
-        // Masivo / Other - Skip check or use current date?
-        // Assuming no check for Masivo requested specifically, or difficult to extract.
         return true; 
     }
 
@@ -101,7 +99,6 @@ function App() {
     let needsPassword = false;
 
     for (const d of datesToCheck) {
-        // d is "YYYY-MM-DD"
         const eventDate = new Date(d + 'T00:00:00');
         const diffTime = today.getTime() - eventDate.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -113,24 +110,29 @@ function App() {
     }
 
     if (needsPassword) {
-      const pwd = window.prompt("⚠️ ALERTA DE SEGURIDAD\nUna o más fechas seleccionadas tienen más de 3 días de diferencia con hoy.\nIngrese la contraseña de administrador para autorizar la excepción:");
+      const pwd = await showPassword(
+        'Una o más fechas seleccionadas tienen más de 3 días de diferencia con la fecha actual.\n\nSe requiere autorización de administrador para continuar con esta excepción.',
+        { title: '⚠️ Alerta de Seguridad' }
+      );
+      
+      if (!pwd) return false; // User cancelled
+      
       if (pwd !== "admin123") {
-        alert("Contraseña incorrecta. Operación cancelada.");
+        await showAlert('Contraseña incorrecta. Operación cancelada.', { variant: 'error' });
         return false;
       }
     }
     return true;
   };
 
-  const handleGeneratePDF = () => {
-    if (!validateSecurity()) return;
+  const handleGeneratePDF = async () => {
+    if (!(await validateSecurity())) return;
 
     let formData = { 
         commonFolio: getFolioDisplay(currentTab),
-        validationDate: new Date().toISOString().split('T')[0] // Fallback for QR validation date logic if needed
+        validationDate: new Date().toISOString().split('T')[0]
     };
     
-    // Pass raw dates to generator if needed for QR extra info
     if (currentTab === 'individual') formData.rawDates = individualData.rawDates;
 
     let activeList = [];
@@ -139,14 +141,14 @@ function App() {
       formData = { ...formData, ...individualData };
       activeList = studentLists.individual;
       if (activeList.length === 0) {
-          alert('Agregue al menos un estudiante a la lista.');
+          await showAlert('Agregue al menos un estudiante a la lista.', { variant: 'warning' });
           return;
       }
     } else if (currentTab === 'grupal') {
       formData = { ...formData, ...grupalData };
       activeList = studentLists.grupal;
        if (activeList.length === 0) {
-          alert('La lista grupal está vacía.');
+          await showAlert('La lista grupal está vacía.', { variant: 'warning' });
           return;
       }
     } else if (currentTab === 'masivo') {
@@ -154,12 +156,12 @@ function App() {
     } else if (currentTab === 'practica') {
       formData = { ...formData, ...practicaData };
       if (!practicaData.alumno) {
-          alert('Seleccione un estudiante válido.');
+          await showAlert('Seleccione un estudiante válido.', { variant: 'warning' });
           return;
       }
     }
 
-    generatePDF(currentTab, formData, activeList);
+    generatePDF(currentTab, formData, activeList, showAlert);
     incrementFolio(currentTab);
   };
 
@@ -169,34 +171,36 @@ function App() {
         return (
           <FormIndividual
             data={individualData}
-            onChange={(key, value) => setIndividualData({ ...individualData, [key]: value })}
+            onChange={(key, value) => setIndividualData(prev => ({ ...prev, [key]: value }))}
             studentList={studentLists.individual}
             onAddStudent={handleAddStudent}
             onRemoveStudent={handleRemoveStudent}
+            showAlert={showAlert}
           />
         );
       case 'grupal':
         return (
           <FormGrupal
             data={grupalData}
-            onChange={(key, value) => setGrupalData({ ...grupalData, [key]: value })}
+            onChange={(key, value) => setGrupalData(prev => ({ ...prev, [key]: value }))}
             studentList={studentLists.grupal}
             onAddStudent={handleAddStudent}
             onRemoveStudent={handleRemoveStudent}
+            showAlert={showAlert}
           />
         );
       case 'masivo':
         return (
           <FormMasivo
             data={masivoData}
-            onChange={(key, value) => setMasivoData({ ...masivoData, [key]: value })}
+            onChange={(key, value) => setMasivoData(prev => ({ ...prev, [key]: value }))}
           />
         );
       case 'practica':
         return (
           <FormPractica
             data={practicaData}
-            onChange={(key, value) => setPracticaData({ ...practicaData, [key]: value })}
+            onChange={(key, value) => setPracticaData(prev => ({ ...prev, [key]: value }))}
           />
         );
       default:
@@ -219,7 +223,6 @@ function App() {
               {/* Generate Button */}
               <div className="mt-8 pt-6 border-t border-gray-200">
                  <div className="flex flex-col md:flex-row gap-4 items-end justify-between">
-                  {/* Info about security (implicit) */}
                   <div className="text-xs text-gray-400 italic">
                       * La fecha de emisión es automática. Las fechas de inasistencia se validan por seguridad.
                   </div>
@@ -237,6 +240,9 @@ function App() {
           </div>
         </main>
       </div>
+
+      {/* Global Modal */}
+      <Modal />
     </div>
   );
 }
