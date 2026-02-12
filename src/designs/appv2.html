@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>S.G.D. - Escuela Normal Rural "Luis Villarreal"</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Librerías para generación de PDF y QR -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <!-- Fuentes Institucionales -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              gob: {
+                maroon: "#691C32", // Guinda oficial
+                gold: "#BC955C", // Dorado oficial
+                grey: "#54565A",
+              },
+            },
+            fontFamily: {
+              sans: ["Montserrat", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .form-input {
+        width: 100%;
+        border: 1px solid #d1d5db;
+        padding: 0.5rem;
+        border-radius: 0.375rem;
+        outline: none;
+        transition: border-color 0.2s;
+        font-size: 0.875rem;
+      }
+      .form-input:focus {
+        border-color: #691c32;
+        box-shadow: 0 0 0 1px #691c32;
+      }
+      .sidebar-link {
+        transition: all 0.2s;
+      }
+      .sidebar-link:hover,
+      .sidebar-link.active {
+        background-color: #bc955c;
+        color: white;
+        padding-left: 1.5rem;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 h-screen flex overflow-hidden">
+    <!-- Datos Simulados (Catálogos) -->
+    <script>
+      const bdAlumnos = [
+        {
+          mat: "11135ZSAL78810",
+          nom: "TANIA ELIZABETH LOPEZ SANCHEZ",
+          sem: "PRIMERO",
+          gpo: "B",
+        },
+        {
+          mat: "241305080000",
+          nom: "ISAIAH JESUS GARCIA",
+          sem: "TERCERO",
+          gpo: "B",
+        },
+        {
+          mat: "241305460000",
+          nom: "MONTSERRAT IBARRA",
+          sem: "TERCERO",
+          gpo: "C",
+        },
+        {
+          mat: "241304870000",
+          nom: "OSCAR ISAI ALTAMIRANO",
+          sem: "TERCERO",
+          gpo: "A",
+        },
+        { mat: "241305560000", nom: "KEVIN ALDAIR", sem: "TERCERO", gpo: "A" },
+        {
+          mat: "241305380000",
+          nom: "ANGEL EMIR PEREZ",
+          sem: "TERCERO",
+          gpo: "B",
+        },
+        {
+          mat: "231304180000",
+          nom: "NIDIA BERENICE ANTONIO MORALES",
+          sem: "QUINTO",
+          gpo: "A",
+        },
+        {
+          mat: "221310790000",
+          nom: "VIRIDIANA FUENTES BLANCO",
+          sem: "SÉPTIMO",
+          gpo: "A",
+        },
+      ];
+
+      const bdEscuelas = [
+        {
+          id: 1,
+          dir: "MTRO. ANDRES VIGUERAS VELAZQUEZ",
+          esc: "ESCUELA PRIMARIA ALVARO OBREGÓN",
+        },
+        {
+          id: 2,
+          dir: "MTRA. LAURA GOMEZ PEREZ",
+          esc: "ESCUELA PRIMARIA BENITO JUAREZ",
+        },
+        {
+          id: 3,
+          dir: "MTRO. CARLOS RUIZ CORTINES",
+          esc: "ESCUELA PRIMARIA EMILIANO ZAPATA",
+        },
+      ];
+
+      // Estado Global
+      let currentType = "individual";
+      let listasAlumnos = { individual: [], grupal: [] };
+
+      // Manejo de Folios (Se guardan en LocalStorage)
+      let folios = JSON.parse(localStorage.getItem("enrlv_folios")) || {
+        individual: 1,
+        grupal: 1,
+        masivo: 1,
+        practica: 1,
+      };
+
+      function getFolioDisplay(type) {
+        return String(folios[type]).padStart(4, "0");
+      }
+      function incrementFolio(type) {
+        folios[type]++;
+        localStorage.setItem("enrlv_folios", JSON.stringify(folios));
+        updateFolioUI();
+      }
+    </script>
+
+    <!-- Sidebar -->
+    <aside
+      class="w-64 bg-gob-maroon text-white flex-shrink-0 hidden md:flex flex-col shadow-xl z-20"
+    >
+      <div class="p-6 border-b border-white/20">
+        <h2 class="text-xl font-bold tracking-wider">ENRLV</h2>
+        <p class="text-xs text-gray-300 mt-1">Gestión Documental V2</p>
+      </div>
+      <nav class="flex-1 py-6 space-y-1">
+        <button
+          onclick="switchTab('individual')"
+          id="btn-individual"
+          class="sidebar-link w-full text-left px-6 py-3 flex items-center space-x-3 active"
+        >
+          <span class="text-sm font-medium">Justificante Individual</span>
+        </button>
+        <button
+          onclick="switchTab('grupal')"
+          id="btn-grupal"
+          class="sidebar-link w-full text-left px-6 py-3 flex items-center space-x-3"
+        >
+          <span class="text-sm font-medium">Justificante Grupal</span>
+        </button>
+        <button
+          onclick="switchTab('masivo')"
+          id="btn-masivo"
+          class="sidebar-link w-full text-left px-6 py-3 flex items-center space-x-3"
+        >
+          <span class="text-sm font-medium">Justificante Masivo</span>
+        </button>
+        <button
+          onclick="switchTab('practica')"
+          id="btn-practica"
+          class="sidebar-link w-full text-left px-6 py-3 flex items-center space-x-3"
+        >
+          <span class="text-sm font-medium">Oficio de Práctica</span>
+        </button>
+      </nav>
+      <div
+        class="p-4 border-t border-white/20 text-xs text-center text-gray-300"
+      >
+        &copy; 2026 ENRLV - El Mexe
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <!-- Header Móvil / Topbar -->
+      <header class="bg-white border-b border-gray-200 shadow-sm z-10">
+        <div class="px-6 py-4 flex justify-between items-center">
+          <div class="flex items-center gap-3">
+            <h1 id="page-title" class="text-lg font-bold text-gob-grey">
+              Justificante Individual
+            </h1>
+            <span
+              id="badge-folio"
+              class="bg-gob-gold text-white px-2 py-1 rounded text-xs font-bold"
+              >Folio: 0001</span
+            >
+          </div>
+          <div class="flex items-center space-x-4">
+            <div class="text-right hidden sm:block">
+              <p class="text-xs font-bold text-gob-maroon">
+                MTRA. ADELINA MENDOZA AGUILAR
+              </p>
+              <p class="text-[10px] text-gray-500">Coordinación Docente</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content Scrollable -->
+      <main class="flex-1 overflow-auto p-4 md:p-8">
+        <div
+          class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden min-h-[600px]"
+        >
+          <!-- Datalist para autocompletado (oculto) -->
+          <datalist id="catalogo-alumnos"></datalist>
+
+          <!-- Área de Formularios -->
+          <div class="p-6 md:p-10">
+            <!-- Formulario: JUSTIFICANTE INDIVIDUAL -->
+            <div id="form-individual" class="form-section block">
+              <div class="mb-4 border-l-4 border-gob-gold pl-4">
+                <h3 class="text-lg font-bold text-gob-maroon">
+                  Estudiantes a Justificar
+                </h3>
+                <p class="text-sm text-gray-500">
+                  Agregue uno o más alumnos. Se generará un oficio con Copia
+                  integrada.
+                </p>
+              </div>
+
+              <!-- Buscador / Agregador -->
+              <div
+                class="flex gap-2 mb-4 items-end bg-gray-50 p-4 rounded-lg border border-gray-200"
+              >
+                <div class="flex-1">
+                  <label
+                    class="block text-xs font-bold text-gray-500 uppercase mb-1"
+                    >Buscar Matrícula</label
+                  >
+                  <input
+                    list="catalogo-alumnos"
+                    id="ind-search"
+                    class="form-input"
+                    placeholder="Ej. 11135..."
+                    onchange="autofill('ind')"
+                  />
+                </div>
+                <div class="flex-[2]">
+                  <label
+                    class="block text-xs font-bold text-gray-500 uppercase mb-1"
+                    >Nombre</label
+                  >
+                  <input
+                    type="text"
+                    id="ind-nom"
+                    class="form-input bg-gray-100"
+                    readonly
+                  />
+                </div>
+                <div class="w-24">
+                  <label
+                    class="block text-xs font-bold text-gray-500 uppercase mb-1"
+                    >Sem.</label
+                  >
+                  <input
+                    type="text"
+                    id="ind-sem"
+                    class="form-input bg-gray-100"
+                    readonly
+                  />
+                </div>
+                <div class="w-20">
+                  <label
+                    class="block text-xs font-bold text-gray-500 uppercase mb-1"
+                    >Gpo.</label
+                  >
+                  <input
+                    type="text"
+                    id="ind-gpo"
+                    class="form-input bg-gray-100"
+                    readonly
+                  />
+                </div>
+                <button
+                  onclick="addStudentToList('individual')"
+                  class="bg-gob-maroon text-white px-4 py-2 rounded hover:bg-red-900 transition h-[38px] font-bold text-sm"
+                >
+                  + Add
+                </button>
+              </div>
+
+              <!-- Lista Visual -->
+              <div class="mb-6">
+                <ul
+                  id="ind-list-ui"
+                  class="space-y-2 text-sm text-gray-600"
+                ></ul>
+              </div>
+
+              <div class="mb-4 border-l-4 border-gob-gold pl-4">
+                <h3 class="text-lg font-bold text-gob-maroon">
+                  Detalles de la Justificación
+                </h3>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                  <label
+                    class="block text-xs font-bold text-gray-700 uppercase mb-1"
+                    >Fechas a Justificar (Texto para documento)</label
+                  >
+                  <input
+                    type="text"
+                    id="ind-fechas"
+                    class="form-input"
+                    placeholder="Ej. del día 02 y 03 de octubre de 2026"
+                  />
+                </div>
+                <div class="md:col-span-2">
+                  <label
+                    class="block text-xs font-bold text-gray-700 uppercase mb-1"
+                    >Motivo (Breve)</label
+                  >
+                  <textarea
+                    id="ind-motivo"
+                    rows="2"
+                    class="form-input"
+                    placeholder="Ej. han presentado la documentación necesaria para justificar la inasistencia por motivos de salud."
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Formulario: JUSTIFICANTE GRUPAL -->
+            <div id="form-grupal" class="form-section hidden">
+              <div
+                class="mb-6 border-l-4 border-gob-gold pl-4 flex justify-between items-end"
+              >
+                <div>
+                  <h3 class="text-lg font-bold text-gob-maroon">
+                    Lista de Estudiantes (Grupal)
+                  </h3>
+                  <p class="text-sm text-gray-500">
+                    Genere listas completas filtrando por grupo. Genera Original
+                    y Copia (2 hojas).
+                  </p>
+                </div>
+              </div>
+
+              <div
+                class="bg-gray-50 p-4 rounded-lg mb-6 border border-gray-200"
+              >
+                <h4 class="text-sm font-bold text-gray-700 mb-3">
+                  Datos del Oficio
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label
+                      class="block text-xs font-bold text-gray-500 uppercase mb-1"
+                      >Fecha Justificación</label
+                    >
+                    <input
+                      type="text"
+                      id="grup-fecha-just"
+                      class="form-input bg-white"
+                      placeholder="Ej. 13 de OCTUBRE de 2026"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      class="block text-xs font-bold text-gray-500 uppercase mb-1"
+                      >Horario</label
+                    >
+                    <input
+                      type="text"
+                      id="grup-horario"
+                      class="form-input bg-white"
+                      placeholder="Ej. 8:00am a 15:10 Hrs"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      class="block text-xs font-bold text-gray-500 uppercase mb-1"
+                      >Motivo</label
+                    >
+                    <input
+                      type="text"
+                      id="grup-motivo"
+                      class="form-input bg-white"
+                      value="Por citado a miembro de la base estudiantil por guardia"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Filtro Masivo -->
+              <div
+                class="flex gap-4 mb-4 items-end bg-blue-50 p-3 rounded border border-blue-100"
+              >
+                <div>
+                  <label
+                    class="block text-xs font-bold text-blue-800 uppercase mb-1"
+                    >Cargar Grupo Completo</label
+                  >
+                  <select id="filter-sem" class="form-input text-sm w-32">
+                    <option value="">Semestre...</option>
+                    <option>PRIMERO</option>
+                    <option>TERCERO</option>
+                    <option>QUINTO</option>
+                    <option>SÉPTIMO</option>
+                  </select>
+                </div>
+                <div>
+                  <select id="filter-gpo" class="form-input text-sm w-24">
+                    <option value="">Grupo...</option>
+                    <option>A</option>
+                    <option>B</option>
+                    <option>C</option>
+                  </select>
+                </div>
+                <button
+                  onclick="loadGroup()"
+                  class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition text-sm font-bold"
+                >
+                  Filtrar y Cargar
+                </button>
+                <button
+                  onclick="clearList('grupal')"
+                  class="text-red-500 underline text-xs ml-auto"
+                >
+                  Limpiar Lista
+                </button>
+              </div>
+
+              <!-- Búsqueda Individual Adicional -->
+              <div class="flex gap-2 mb-4 items-end">
+                <input
+                  list="catalogo-alumnos"
+                  id="grup-search"
+                  class="form-input text-sm"
+                  placeholder="O agregar por matrícula..."
+                  onchange="autofill('grup')"
+                />
+                <input type="hidden" id="grup-nom" /><input
+                  type="hidden"
+                  id="grup-sem"
+                /><input type="hidden" id="grup-gpo" />
+                <button
+                  onclick="addStudentToList('grupal')"
+                  class="bg-gob-gold text-white px-4 py-2 rounded hover:bg-yellow-600 transition text-sm font-bold"
+                >
+                  +
+                </button>
+              </div>
+
+              <!-- Table -->
+              <div
+                class="overflow-x-auto border rounded-lg h-64 overflow-y-auto"
+              >
+                <table class="w-full text-sm text-left text-gray-500">
+                  <thead
+                    class="text-xs text-white uppercase bg-gob-maroon sticky top-0"
+                  >
+                    <tr>
+                      <th class="px-4 py-2">#</th>
+                      <th class="px-4 py-2">Matrícula</th>
+                      <th class="px-4 py-2">Nombre</th>
+                      <th class="px-4 py-2">Semestre/Grupo</th>
+                      <th class="px-4 py-2 text-right">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody id="grup-table-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Formulario: JUSTIFICANTE MASIVO -->
+            <div id="form-masivo" class="form-section hidden">
+              <div class="mb-6 border-l-4 border-gob-gold pl-4">
+                <h3 class="text-lg font-bold text-gob-maroon">
+                  Justificación Masiva (Académica)
+                </h3>
+                <p class="text-sm text-gray-500">
+                  Solicitud libre dirigida a directivos o academia. Genera 2
+                  hojas.
+                </p>
+              </div>
+
+              <div class="space-y-6">
+                <div>
+                  <label
+                    class="block text-xs font-bold text-gray-700 uppercase mb-1"
+                    >Dirigido A</label
+                  >
+                  <input
+                    type="text"
+                    id="mas-dirigido"
+                    class="form-input"
+                    value="CUERPO ACADÉMICO - ESCUELA NORMAL RURAL LUIS VILLARREAL"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    class="block text-xs font-bold text-gray-700 uppercase mb-1"
+                    >Cuerpo del Texto</label
+                  >
+                  <textarea
+                    id="mas-cuerpo"
+                    rows="8"
+                    class="form-input leading-relaxed"
+                  >
+Por medio del presente envío un afectuoso saludo a todos y todas, al mismo tiempo me permito solicitar de su colaboración para justificar la inasistencia de todos los y las estudiantes de la academia de primer semestre el día viernes 17 de mes y año en curso en un horario de 10:10 a 15:10 Hrs. Por su participación en actividades de siembra, organizada por la cartera de Acción Campesina, como parte de las acciones de formación y trabajo comunitario.</textarea
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- Formulario: PRACTICA -->
+            <div id="form-practica" class="form-section hidden">
+              <div class="mb-6 border-l-4 border-gob-gold pl-4">
+                <h3 class="text-lg font-bold text-gob-maroon">
+                  Justificante de Práctica (Externo)
+                </h3>
+                <p class="text-sm text-gray-500">
+                  Seleccione la escuela del catálogo. Imprime Original y Copia
+                  en una hoja.
+                </p>
+              </div>
+
+              <div class="grid grid-cols-1 gap-6 mb-6">
+                <div>
+                  <label
+                    class="block text-xs font-bold text-gray-700 uppercase mb-1"
+                    >Seleccionar Escuela (Catálogo)</label
+                  >
+                  <select
+                    id="prac-escuela-sel"
+                    class="form-input"
+                    onchange="fillEscuelaData(this.value)"
+                  >
+                    <option value="">Seleccione una escuela primaria...</option>
+                  </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      class="block text-xs font-bold text-gray-400 uppercase mb-1"
+                      >Director (Auto)</label
+                    >
+                    <input
+                      type="text"
+                      id="prac-director"
+                      class="form-input bg-gray-100"
+                      readonly
+                    />
+                  </div>
+                  <div>
+                    <label
+                      class="block text-xs font-bold text-gray-400 uppercase mb-1"
+                      >Escuela (Auto)</label
+                    >
+                    <input
+                      type="text"
+                      id="prac-escuela"
+                      class="form-input bg-gray-100"
+                      readonly
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label
+                    class="block text-xs font-bold text-gray-700 uppercase mb-1"
+                    >Atención A (Docente Titular en Primaria)</label
+                  >
+                  <input
+                    type="text"
+                    id="prac-atn"
+                    class="form-input"
+                    placeholder="Ej. MTRA. LIDIA ARTEAGA REYNA"
+                  />
+                </div>
+              </div>
+
+              <div class="bg-red-50 p-4 rounded-lg border border-red-100">
+                <h4 class="text-sm font-bold text-gob-maroon mb-3">
+                  Datos del Practicante
+                </h4>
+                <div class="flex gap-2 items-end mb-4">
+                  <div class="flex-1">
+                    <label
+                      class="block text-[10px] font-bold text-gob-maroon uppercase mb-1"
+                      >Buscar Matrícula</label
+                    >
+                    <input
+                      list="catalogo-alumnos"
+                      id="prac-search"
+                      class="form-input bg-white text-sm"
+                      onchange="autofill('prac')"
+                    />
+                  </div>
+                  <div class="flex-[2]">
+                    <label
+                      class="block text-[10px] font-bold text-gob-maroon uppercase mb-1"
+                      >Nombre Alumno</label
+                    >
+                    <input
+                      type="text"
+                      id="prac-nom"
+                      class="form-input bg-gray-100 text-sm"
+                      readonly
+                    />
+                  </div>
+                  <div class="w-24">
+                    <label
+                      class="block text-[10px] font-bold text-gob-maroon uppercase mb-1"
+                      >Sem.</label
+                    >
+                    <input
+                      type="text"
+                      id="prac-sem"
+                      class="form-input bg-gray-100 text-sm"
+                      readonly
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label
+                    class="block text-xs font-bold text-gob-maroon uppercase mb-1"
+                    >Fecha de Inasistencia a Práctica</label
+                  >
+                  <input
+                    type="text"
+                    id="prac-fecha-ina"
+                    class="form-input bg-white"
+                    placeholder="Ej. martes 22 de octubre"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- VALIDACIÓN COMÚN (Candado 3 días) -->
+            <div
+              class="mt-8 pt-6 border-t border-gray-200 bg-gray-50 p-4 rounded flex flex-col md:flex-row items-center justify-between gap-6"
+            >
+              <div class="flex-1">
+                <h4
+                  class="text-sm font-bold text-red-600 flex items-center gap-2"
+                >
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fill-rule="evenodd"
+                      d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                      clip-rule="evenodd"
+                    ></path>
+                  </svg>
+                  Candado de Seguridad (3 Días)
+                </h4>
+                <p class="text-xs text-gray-500 mt-1">
+                  Fecha real de la inasistencia. Si difiere en más de 3 días de
+                  la fecha de hoy, requerirá contraseña de administrador.
+                </p>
+              </div>
+              <div class="w-full md:w-48">
+                <input
+                  type="date"
+                  id="fecha-validacion"
+                  class="form-input border-red-300 font-bold text-red-700"
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- BOTÓN DE DESCARGA -->
+            <div class="mt-6">
+              <button
+                onclick="procesarDescarga()"
+                class="w-full bg-gob-maroon text-white font-bold py-4 px-8 rounded shadow-lg hover:bg-red-900 transition flex items-center justify-center gap-2 text-lg"
+              >
+                <svg
+                  class="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                  ></path>
+                </svg>
+                Generar y Descargar PDF Oficial
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      // Inicialización
+      document.addEventListener("DOMContentLoaded", () => {
+        // Llenar catálogos en UI
+        const dl = document.getElementById("catalogo-alumnos");
+        bdAlumnos.forEach((a) => {
+          let opt = document.createElement("option");
+          opt.value = a.mat;
+          opt.text = `${a.nom} - ${a.sem} ${a.gpo}`;
+          dl.appendChild(opt);
+        });
+
+        const selEscuela = document.getElementById("prac-escuela-sel");
+        bdEscuelas.forEach((e) => {
+          let opt = document.createElement("option");
+          opt.value = e.id;
+          opt.text = e.esc;
+          selEscuela.appendChild(opt);
+        });
+
+        // Fecha default validación (hoy)
+        const today = new Date();
+        document.getElementById("fecha-validacion").value = today
+          .toISOString()
+          .split("T")[0];
+
+        updateFolioUI();
+      });
+
+      function updateFolioUI() {
+        document.getElementById(
+          "badge-folio"
+        ).innerText = `Folio Automático: ${getFolioDisplay(currentType)}`;
+      }
+
+      function switchTab(type) {
+        currentType = type;
+        document
+          .querySelectorAll(".sidebar-link")
+          .forEach((el) =>
+            el.classList.remove("active", "bg-gob-gold", "text-white", "pl-6")
+          );
+        document
+          .getElementById(`btn-${type}`)
+          .classList.add("active", "bg-gob-gold", "text-white", "pl-6");
+
+        document
+          .querySelectorAll(".form-section")
+          .forEach((el) => el.classList.add("hidden"));
+        document.getElementById(`form-${type}`).classList.remove("hidden");
+
+        const titles = {
+          individual: "Justificante Individual",
+          grupal: "Justificante Grupal (Lista)",
+          masivo: "Justificante Masivo",
+          practica: "Oficio de Práctica",
+        };
+        document.getElementById("page-title").innerText = titles[type];
+        updateFolioUI();
+      }
+
+      // Funciones de Catálogos y Listas
+      function autofill(prefix) {
+        const mat = document.getElementById(`${prefix}-search`).value;
+        const alumno = bdAlumnos.find((a) => a.mat === mat);
+        if (alumno) {
+          document.getElementById(`${prefix}-nom`).value = alumno.nom;
+          document.getElementById(`${prefix}-sem`).value = alumno.sem;
+          if (document.getElementById(`${prefix}-gpo`)) {
+            document.getElementById(`${prefix}-gpo`).value = alumno.gpo;
+          }
+        } else {
+          document.getElementById(`${prefix}-nom`).value = "";
+          document.getElementById(`${prefix}-sem`).value = "";
+          if (document.getElementById(`${prefix}-gpo`))
+            document.getElementById(`${prefix}-gpo`).value = "";
+        }
+      }
+
+      function fillEscuelaData(id) {
+        const escuela = bdEscuelas.find((e) => e.id == id);
+        if (escuela) {
+          document.getElementById("prac-director").value = escuela.dir;
+          document.getElementById("prac-escuela").value = escuela.esc;
+        }
+      }
+
+      function addStudentToList(type) {
+        const prefix = type === "individual" ? "ind" : "grup";
+        const mat = document.getElementById(`${prefix}-search`).value;
+        const nom = document.getElementById(`${prefix}-nom`).value;
+        const sem = document.getElementById(`${prefix}-sem`).value;
+        const gpo = document.getElementById(`${prefix}-gpo`)
+          ? document.getElementById(`${prefix}-gpo`).value
+          : "";
+
+        if (!mat || !nom)
+          return alert("Seleccione un alumno válido del catálogo.");
+
+        listasAlumnos[type].push({
+          matricula: mat,
+          nombre: nom,
+          semestre: sem,
+          grupo: gpo,
+        });
+
+        // Clear inputs
+        document.getElementById(`${prefix}-search`).value = "";
+        autofill(prefix);
+
+        renderList(type);
+      }
+
+      function loadGroup() {
+        const sem = document.getElementById("filter-sem").value;
+        const gpo = document.getElementById("filter-gpo").value;
+        if (!sem || !gpo) return alert("Seleccione Semestre y Grupo");
+
+        const filtrados = bdAlumnos.filter(
+          (a) => a.sem === sem && a.gpo === gpo
+        );
+        if (filtrados.length === 0)
+          return alert("No hay alumnos en ese grupo en el catálogo.");
+
+        listasAlumnos.grupal = [...listasAlumnos.grupal, ...filtrados];
+        renderList("grupal");
+      }
+
+      function removeStudent(type, index) {
+        listasAlumnos[type].splice(index, 1);
+        renderList(type);
+      }
+
+      function clearList(type) {
+        listasAlumnos[type] = [];
+        renderList(type);
+      }
+
+      function renderList(type) {
+        if (type === "individual") {
+          const ul = document.getElementById("ind-list-ui");
+          ul.innerHTML = listasAlumnos.individual
+            .map(
+              (a, i) => `
+                    <li class="flex justify-between items-center bg-gray-50 px-3 py-2 rounded border">
+                        <span><b>${a.matricula}</b> - ${a.nombre} (${a.semestre} ${a.grupo})</span>
+                        <button onclick="removeStudent('individual', ${i})" class="text-red-500 font-bold hover:text-red-700">X</button>
+                    </li>
+                `
+            )
+            .join("");
+        } else {
+          const tbody = document.getElementById("grup-table-body");
+          tbody.innerHTML = listasAlumnos.grupal
+            .map(
+              (a, i) => `
+                    <tr class="bg-white border-b hover:bg-gray-50">
+                        <td class="px-4 py-1">${i + 1}</td>
+                        <td class="px-4 py-1 font-mono text-xs">${
+                          a.matricula
+                        }</td>
+                        <td class="px-4 py-1 font-semibold text-gray-700">${
+                          a.nombre
+                        }</td>
+                        <td class="px-4 py-1 text-xs">${a.semestre} ${
+                a.grupo
+              }</td>
+                        <td class="px-4 py-1 text-right">
+                            <button onclick="removeStudent('grupal', ${i})" class="text-red-500 hover:text-red-700 font-bold">X</button>
+                        </td>
+                    </tr>
+                `
+            )
+            .join("");
+        }
+      }
+
+      // Lógica Principal de Validación y Generación
+      function procesarDescarga() {
+        // 1. Validar fecha (Candado 3 días)
+        const fechaInput = document.getElementById("fecha-validacion").value;
+        if (!fechaInput)
+          return alert(
+            "Debe seleccionar la fecha de inasistencia para la validación."
+          );
+
+        const eventDate = new Date(fechaInput + "T00:00:00");
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const diffTime = today.getTime() - eventDate.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+        if (Math.abs(diffDays) > 3) {
+          const pwd = prompt(
+            "⚠️ ALERTA DE SEGURIDAD\nLa fecha seleccionada tiene más de 3 días de diferencia con hoy.\nIngrese la contraseña de administrador para autorizar la excepción:"
+          );
+          if (pwd !== "admin123") {
+            return alert("Contraseña incorrecta. Operación cancelada.");
+          }
+        }
+
+        // 2. Generar PDF
+        generatePDF(fechaInput);
+      }
+
+      function generatePDF(fechaValidacion) {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        const folioStr = getFolioDisplay(currentType);
+        const todayStr = new Date().toLocaleDateString("es-ES", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+        const fechaEmision = `Francisco I. Madero, Hgo., a ${todayStr}`;
+
+        // Generar QR en base64 usando QRious
+        const qrData = `ENRLV-VALIDADO\nTipo: ${currentType.toUpperCase()}\nFolio: ${folioStr}\nFecha Emisión: ${todayStr}\nFecha Inasistencia: ${fechaValidacion}\nAprobado por: Coord. Docente`;
+        const qr = new QRious({ value: qrData, size: 150 });
+        const qrImgData = qr.toDataURL();
+
+        // Helpers para diseño
+        const drawHeader = (yOffset = 0) => {
+          const maroon = [105, 28, 50];
+          doc.setFontSize(8);
+          doc.setTextColor(100);
+          doc.text("GOBIERNO DE MÉXICO", 15, 15 + yOffset);
+          doc.text("SEP", 15, 20 + yOffset);
+
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(9);
+          let y = 15 + yOffset;
+          const x = 120;
+          doc.text(
+            "Subsecretaría de Educación Media Superior y Superior",
+            x,
+            y
+          );
+          y += 4;
+          doc.text("Dirección General de Formación y Superación Docente", x, y);
+          y += 4;
+          doc.text("Dirección de Educación Normal", x, y);
+          y += 6;
+
+          doc.setFontSize(10);
+          doc.setTextColor(...maroon);
+          doc.text("Escuela Normal Rural “Luis Villarreal”", x, y);
+          y += 4;
+          doc.setFontSize(8);
+          doc.setTextColor(0);
+          doc.text("C.C.T. 13DNL0007B", x, y);
+        };
+
+        const drawFooter = (yOffset = 0, isCopia = false) => {
+          let y = 260 + yOffset;
+          if (yOffset > 0) y = 135 + yOffset; // Ajuste si es mitad de página
+
+          doc.setFontSize(7);
+          doc.setTextColor(100);
+          doc.setFont("helvetica", "normal");
+          doc.text("Carretera Tepatepec-San Juan Tepa Km 2.", 15, y);
+          y += 4;
+          doc.text("Col. Lázaro Cárdenas (El Mexe)", 15, y);
+          y += 4;
+          doc.text("Francisco I. Madero Hgo. C.P. 42670", 15, y);
+
+          // Etiqueta de Original/Copia
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(10);
+          doc.setTextColor(isCopia ? 150 : [105, 28, 50]);
+          doc.text(isCopia ? "ARCHIVO - COPIA" : "ALUMNO - ORIGINAL", 180, y, {
+            align: "right",
+          });
+
+          // Barra decorativa
+          y += 6;
+          doc.setFillColor(105, 28, 50);
+          doc.rect(0, y + 3, 210, 8, "F");
+          doc.setFillColor(188, 149, 92);
+          doc.rect(0, y, 210, 3, "F");
+        };
+
+        const drawQR = (yOffset) => {
+          doc.addImage(qrImgData, "PNG", 15, 225 + yOffset, 25, 25);
+          doc.setFontSize(6);
+          doc.setTextColor(150);
+          doc.text(`QR SEGURIDAD`, 15, 253 + yOffset);
+          doc.text(`Generado: ${todayStr}`, 15, 256 + yOffset);
+        };
+
+        const drawSignature = (yPos) => {
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(10);
+          doc.setTextColor(0);
+          doc.text("ATENTAMENTE", 105, yPos, { align: "center" });
+          doc.text("MTRA. ADELINA MENDOZA AGUILAR", 105, yPos + 20, {
+            align: "center",
+          });
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "normal");
+          doc.text("COORDINACIÓN DOCENTE", 105, yPos + 25, { align: "center" });
+        };
+
+        // --- LÓGICA DE RENDERIZADO POR TIPO ---
+
+        if (currentType === "individual" || currentType === "practica") {
+          // FORMATO CORTO: Imprime Original y Copia en la misma hoja (Mitad y Mitad)
+
+          const drawContent = (offsetY, isCopia) => {
+            if (offsetY > 0) {
+              // Linea divisoria para la copia
+              doc.setDrawColor(200);
+              doc.setLineWidth(0.5);
+              doc.setLineDash([2, 2]);
+              doc.line(10, offsetY - 5, 200, offsetY - 5);
+              doc.setLineDash([]); // Reset
+            }
+
+            drawHeader(offsetY);
+
+            doc.setFontSize(9);
+            doc.setTextColor(0);
+            doc.setFont("helvetica", "normal");
+            doc.text(fechaEmision, 200, offsetY + 35, { align: "right" });
+            doc.setFont("helvetica", "bold");
+            doc.text(`FOLIO: ${folioStr} / 2026`, 200, offsetY + 40, {
+              align: "right",
+            });
+            doc.text(`ENRLV/CD/J/${folioStr}/2026`, 200, offsetY + 45, {
+              align: "right",
+            });
+
+            let y = offsetY + 55;
+
+            if (currentType === "individual") {
+              if (listasAlumnos.individual.length === 0)
+                throw new Error("Añada al menos un alumno.");
+              doc.text("DOCENTE TITULAR", 15, y);
+              doc.text("PRESENTE", 15, y + 5);
+              y += 15;
+
+              doc.setFont("helvetica", "normal");
+              let txt = `Por medio del presente se hace de su conocimiento que ${
+                listasAlumnos.individual.length > 1
+                  ? "los estudiantes:"
+                  : "el estudiante "
+              }`;
+              if (listasAlumnos.individual.length === 1) {
+                let a = listasAlumnos.individual[0];
+                txt += `${a.nombre} con matrícula ${a.matricula} de ${a.semestre} semestre grupo ${a.grupo}, `;
+              }
+
+              const motivo = document.getElementById("ind-motivo").value;
+              const fechas = document.getElementById("ind-fechas").value;
+              txt += `${motivo} para los días ${fechas}.`;
+
+              let splitTxt = doc.splitTextToSize(txt, 180);
+              doc.text(splitTxt, 15, y);
+              y += splitTxt.length * 5;
+
+              // Si son varios, renderizar lista tipo viñetas
+              if (listasAlumnos.individual.length > 1) {
+                y += 2;
+                listasAlumnos.individual.forEach((a) => {
+                  doc.text(
+                    `• ${a.nombre} (Mat: ${a.matricula}) - ${a.semestre} ${a.grupo}`,
+                    20,
+                    y
+                  );
+                  y += 5;
+                });
+                y += 2;
+              }
+
+              doc.text(
+                "Agradezco su atención, quedo atenta ante cualquier duda.",
+                15,
+                y + 5
+              );
+              drawSignature(offsetY + 110);
+            } else if (currentType === "practica") {
+              const dir = document.getElementById("prac-director").value;
+              const esc = document.getElementById("prac-escuela").value;
+              const atn = document.getElementById("prac-atn").value;
+              const nom = document.getElementById("prac-nom").value;
+              const mat = document.getElementById("prac-search").value;
+              const sem = document.getElementById("prac-sem").value;
+              const fIna = document.getElementById("prac-fecha-ina").value;
+              if (!nom) throw new Error("Busque un alumno válido.");
+
+              doc.text(dir, 15, y);
+              y += 4;
+              doc.text(`DIRECTOR(A) DE LA ${esc}`, 15, y);
+              y += 4;
+              doc.text("PRESENTE.", 15, y);
+              y += 8;
+              doc.text(`AT'N. ${atn} - DOCENTE TITULAR.`, 15, y);
+              y += 12;
+
+              doc.setFont("helvetica", "normal");
+              const txt = `La que suscribe Mtra. Adelina Mendoza Aguilar, le envío un cordial saludo, al mismo tiempo me permito comunicar a usted que el/la estudiante ${nom}, con matrícula ${mat} de ${sem} Semestre, quien se encuentra en la institución que atinadamente dirige como practicante, presentó una situación que no le permitió asistir a práctica el día ${fIna}. De antemano agradezco la atención al presente para justificar su inasistencia.`;
+              let splitTxt = doc.splitTextToSize(txt, 180);
+              doc.text(splitTxt, 15, y, { align: "justify", maxWidth: 180 });
+              drawSignature(offsetY + 115);
+            }
+
+            // Código QR (Pequeño para formato medio)
+            doc.addImage(qrImgData, "PNG", 15, offsetY + 115, 20, 20);
+            drawFooter(offsetY - 125, isCopia); // Ajuste matemático para el footer
+          };
+
+          try {
+            drawContent(0, false); // ORIGINAL (Arriba)
+            drawContent(148, true); // COPIA (Abajo)
+          } catch (e) {
+            return alert(e.message);
+          }
+        } else {
+          // FORMATO LARGO (Grupal / Masivo): Dos hojas completas.
+          const generateFullPage = (isCopia) => {
+            if (isCopia) doc.addPage();
+            drawHeader();
+            drawQR(0);
+            drawFooter(0, isCopia);
+
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            let y = 45;
+            doc.text(fechaEmision, 200, y, { align: "right" });
+            y += 6;
+            doc.setFont("helvetica", "bold");
+            doc.text(`FOLIO: ${folioStr} / 2026`, 200, y, { align: "right" });
+            doc.text(
+              `ENRLV/CD/${
+                currentType === "masivo" ? "" : "J/"
+              }${folioStr}/2026`,
+              200,
+              y + 5,
+              { align: "right" }
+            );
+
+            y += 20;
+
+            if (currentType === "grupal") {
+              if (listasAlumnos.grupal.length === 0)
+                throw new Error("La lista grupal está vacía.");
+              doc.text("DOCENTE TITULAR", 15, y);
+              doc.text("PRESENTE", 15, y + 5);
+              y += 15;
+
+              doc.setFont("helvetica", "normal");
+              const f = document.getElementById("grup-fecha-just").value;
+              const h = document.getElementById("grup-horario").value;
+              const m = document.getElementById("grup-motivo").value;
+              const txt = `Por medio del presente se hace de su conocimiento la lista de estudiantes adjunta. Para la justificación del día ${f} en un horario de ${h}, ${m}.`;
+              const split = doc.splitTextToSize(txt, 180);
+              doc.text(split, 15, y);
+              y += split.length * 5 + 5;
+
+              const data = listasAlumnos.grupal.map((s, i) => [
+                i + 1,
+                s.matricula,
+                s.nombre,
+                s.semestre,
+                s.grupo,
+              ]);
+              doc.autoTable({
+                startY: y,
+                head: [["#", "MATRÍCULA", "NOMBRE", "SEM", "GPO"]],
+                body: data,
+                theme: "grid",
+                headStyles: { fillColor: [105, 28, 50], fontSize: 8 },
+                bodyStyles: { fontSize: 8 },
+                margin: { left: 15, right: 15, bottom: 40 }, // Respetar QR y firma
+              });
+              drawSignature(doc.lastAutoTable.finalY + 20);
+            } else if (currentType === "masivo") {
+              const dir = document.getElementById("mas-dirigido").value;
+              const cuerpo = document.getElementById("mas-cuerpo").value;
+
+              doc.text(dir, 15, y);
+              doc.text("PRESENTE", 15, y + 5);
+              y += 15;
+              doc.setFont("helvetica", "normal");
+
+              const split = doc.splitTextToSize(cuerpo, 180);
+              doc.text(split, 15, y, { align: "justify", maxWidth: 180 });
+              y += split.length * 6 + 15;
+              doc.text("Agradeciendo su atención, quedo de usted.", 15, y);
+
+              drawSignature(y + 30);
+            }
+          };
+
+          try {
+            generateFullPage(false); // Original (Pág 1)
+            generateFullPage(true); // Copia (Pág 2)
+          } catch (e) {
+            return alert(e.message);
+          }
+        }
+
+        // Descargar y Aumentar Folio
+        doc.save(`ENRLV_${currentType.toUpperCase()}_FOLIO_${folioStr}.pdf`);
+        incrementFolio(currentType);
+        alert(
+          "✅ Documento generado exitosamente. Se ha incrementado el folio automático."
+        );
+      }
+    </script>
+  </body>
+</html>

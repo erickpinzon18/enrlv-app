@@ -7,87 +7,162 @@ import FormMasivo from './components/forms/FormMasivo';
 import FormPractica from './components/forms/FormPractica';
 import { DownloadIcon } from './components/Icons';
 import { generatePDF } from './utils/pdfGenerator';
+import { useFolios } from './hooks/useFolios';
 
 function App() {
   const [currentTab, setCurrentTab] = useState('individual');
-  const [studentList, setStudentList] = useState([]);
+  const { folios, incrementFolio, getFolioDisplay } = useFolios();
   
-  // Form data for individual
+  // Lists state
+  const [studentLists, setStudentLists] = useState({
+    individual: [],
+    grupal: []
+  });
+  
+  // Data States
   const [individualData, setIndividualData] = useState({
-    nombre: '',
-    matricula: '',
-    semestre: 'PRIMERO',
-    grupo: 'A',
-    fechas: '',
-    motivo: '',
+    nombre: '', matricula: '', semestre: 'PRIMERO', grupo: 'A', fechas: '', motivo: '', rawDates: []
   });
 
-  // Form data for grupal
   const [grupalData, setGrupalData] = useState({
-    fechaJust: '',
-    horario: '',
-    motivo: 'Por citado a miembro de la base estudiantil por guardia',
+    fechaJust: '', horario: '', motivo: 'Por citado a miembro de la base estudiantil por guardia', rawDate: ''
   });
 
-  // Form data for masivo
   const [masivoData, setMasivoData] = useState({
     dirigido: 'CUERPO ACADÉMICO - ESCUELA NORMAL RURAL LUIS VILLARREAL',
-    cuerpo: 'Por medio del presente envío un afectuoso saludo a todos y todas, al mismo tiempo me permito solicitar de su colaboración para justificar la inasistencia de todos los y las estudiantes de la academia de primer semestre el día viernes 17 de mes y año en curso en un horario de 10:10 a 15:10 Hrs. Por su participación en actividades de siembra, organizada por la cartera de Acción Campesina, como parte de las acciones de formación y trabajo comunitario.',
-    fechaMas: 'Francisco I. Madero, Hidalgo, a 21 de Octubre de 2025',
-    folioMas: 'ENRLV/CD/0223/2025',
+    cuerpo: 'Por medio del presente envío un afectuoso saludo a todos y todas...',
+    fechaMas: 'Francisco I. Madero, Hidalgo, a 21 de Octubre de 2026',
+    folioMas: 'ENRLV/CD/0223/2026',
+    // Masivo dates usually in body text, difficult to automate without regex. 
+    // User didn't request specific date picker for masivo body yet.
   });
 
-  // Form data for practica
   const [practicaData, setPracticaData] = useState({
-    director: '',
-    escuela: '',
-    atn: '',
-    alumno: '',
-    pracMatricula: '',
-    pracSemestre: '',
-    fechaIna: '',
+    director: '', escuela: '', atn: '', alumno: '', pracMatricula: '', pracSemestre: '', fechaIna: '', rawDate: ''
   });
 
-  // Common fields
-  const [commonFolio, setCommonFolio] = useState('0001');
+  const [commonFolio, setCommonFolio] = useState('');
   const [commonFecha, setCommonFecha] = useState('');
 
-  // Initialize date
+  // Initialize common date
   useEffect(() => {
     const today = new Date();
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    const dateStr = `Francisco I. Madero, Hgo., a ${today.toLocaleDateString('es-ES', options)}`;
-    setCommonFecha(dateStr);
+    setCommonFecha(`Francisco I. Madero, Hgo., a ${today.toLocaleDateString('es-ES', options)}`);
   }, []);
 
-  // Handler for adding students
+  // Handlers for Lists
   const handleAddStudent = (student) => {
-    setStudentList([...studentList, student]);
+    setStudentLists(prev => ({
+      ...prev,
+      [currentTab]: [...(prev[currentTab] || []), student]
+    }));
   };
 
-  // Handler for removing students
   const handleRemoveStudent = (index) => {
-    setStudentList(studentList.filter((_, i) => i !== index));
+    setStudentLists(prev => ({
+      ...prev,
+      [currentTab]: (prev[currentTab] || []).filter((_, i) => i !== index)
+    }));
   };
 
-  // Handler for generating PDF
+  const validateSecurity = () => {
+    // 1. Determine which dates to check
+    let datesToCheck = [];
+
+    if (currentTab === 'individual') {
+        if (!individualData.rawDates || individualData.rawDates.length === 0) {
+            alert('Debe seleccionar al menos una fecha para justificar.');
+            return false;
+        }
+        datesToCheck = individualData.rawDates;
+    } else if (currentTab === 'grupal') {
+        if (!grupalData.rawDate) {
+            alert('Debe seleccionar la fecha de justificación.');
+            return false;
+        }
+        datesToCheck = [grupalData.rawDate];
+    } else if (currentTab === 'practica') {
+        if (!practicaData.rawDate) {
+            alert('Debe seleccionar la fecha de inasistencia.');
+            return false;
+        }
+        datesToCheck = [practicaData.rawDate];
+    } else {
+        // Masivo / Other - Skip check or use current date?
+        // Assuming no check for Masivo requested specifically, or difficult to extract.
+        return true; 
+    }
+
+    // 2. Check each date against 3-day rule
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    let needsPassword = false;
+
+    for (const d of datesToCheck) {
+        // d is "YYYY-MM-DD"
+        const eventDate = new Date(d + 'T00:00:00');
+        const diffTime = today.getTime() - eventDate.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+        if (Math.abs(diffDays) > 3) {
+            needsPassword = true;
+            break;
+        }
+    }
+
+    if (needsPassword) {
+      const pwd = window.prompt("⚠️ ALERTA DE SEGURIDAD\nUna o más fechas seleccionadas tienen más de 3 días de diferencia con hoy.\nIngrese la contraseña de administrador para autorizar la excepción:");
+      if (pwd !== "admin123") {
+        alert("Contraseña incorrecta. Operación cancelada.");
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleGeneratePDF = () => {
-    let formData = { commonFolio, commonFecha };
+    if (!validateSecurity()) return;
+
+    let formData = { 
+        commonFolio: getFolioDisplay(currentTab),
+        validationDate: new Date().toISOString().split('T')[0] // Fallback for QR validation date logic if needed
+    };
+    
+    // Pass raw dates to generator if needed for QR extra info
+    if (currentTab === 'individual') formData.rawDates = individualData.rawDates;
+
+    let activeList = [];
 
     if (currentTab === 'individual') {
       formData = { ...formData, ...individualData };
+      activeList = studentLists.individual;
+      if (activeList.length === 0) {
+          alert('Agregue al menos un estudiante a la lista.');
+          return;
+      }
     } else if (currentTab === 'grupal') {
       formData = { ...formData, ...grupalData };
+      activeList = studentLists.grupal;
+       if (activeList.length === 0) {
+          alert('La lista grupal está vacía.');
+          return;
+      }
     } else if (currentTab === 'masivo') {
       formData = { ...formData, ...masivoData };
     } else if (currentTab === 'practica') {
       formData = { ...formData, ...practicaData };
+      if (!practicaData.alumno) {
+          alert('Seleccione un estudiante válido.');
+          return;
+      }
     }
 
-    generatePDF(currentTab, formData, studentList);
+    generatePDF(currentTab, formData, activeList);
+    incrementFolio(currentTab);
   };
 
-  // Render current form
   const renderForm = () => {
     switch (currentTab) {
       case 'individual':
@@ -95,6 +170,9 @@ function App() {
           <FormIndividual
             data={individualData}
             onChange={(key, value) => setIndividualData({ ...individualData, [key]: value })}
+            studentList={studentLists.individual}
+            onAddStudent={handleAddStudent}
+            onRemoveStudent={handleRemoveStudent}
           />
         );
       case 'grupal':
@@ -102,7 +180,7 @@ function App() {
           <FormGrupal
             data={grupalData}
             onChange={(key, value) => setGrupalData({ ...grupalData, [key]: value })}
-            studentList={studentList}
+            studentList={studentLists.grupal}
             onAddStudent={handleAddStudent}
             onRemoveStudent={handleRemoveStudent}
           />
@@ -128,56 +206,32 @@ function App() {
 
   return (
     <div className="bg-gray-100 h-screen flex overflow-hidden font-sans">
-      {/* Sidebar */}
       <Sidebar currentTab={currentTab} onTabChange={setCurrentTab} />
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Header */}
-        <Header currentTab={currentTab} />
+        <Header currentTab={currentTab} folio={getFolioDisplay(currentTab)} />
 
-        {/* Content Scrollable */}
         <main className="flex-1 overflow-auto p-4 md:p-8">
           <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden min-h-[600px]">
-            {/* Form Container */}
             <div className="p-6 md:p-10">
               {renderForm()}
 
-              {/* Common Fields (Folio/Date) */}
+              {/* Generate Button */}
               <div className="mt-8 pt-6 border-t border-gray-200">
-                <div className="flex flex-col md:flex-row gap-4 items-end justify-between">
-                  <div className="flex gap-4 w-full md:w-auto">
-                    <div>
-                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
-                        Folio (Opcional)
-                      </label>
-                      <input
-                        type="text"
-                        value={commonFolio}
-                        onChange={(e) => setCommonFolio(e.target.value)}
-                        className="form-input text-sm w-32"
-                      />
-                    </div>
-                    <div className="flex-1 md:w-64">
-                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">
-                        Fecha de Emisión
-                      </label>
-                      <input
-                        type="text"
-                        value={commonFecha}
-                        onChange={(e) => setCommonFecha(e.target.value)}
-                        className="form-input text-sm"
-                      />
-                    </div>
+                 <div className="flex flex-col md:flex-row gap-4 items-end justify-between">
+                  {/* Info about security (implicit) */}
+                  <div className="text-xs text-gray-400 italic">
+                      * La fecha de emisión es automática. Las fechas de inasistencia se validan por seguridad.
                   </div>
-                  <button
-                    onClick={handleGeneratePDF}
-                    className="w-full md:w-auto bg-gob-maroon text-white font-bold py-3 px-8 rounded shadow hover:bg-red-900 transition flex items-center justify-center gap-2"
-                  >
-                    <DownloadIcon className="w-5 h-5" />
-                    Descargar PDF
-                  </button>
-                </div>
+
+                   <button
+                        onClick={handleGeneratePDF}
+                        className="w-full md:w-auto bg-gob-maroon text-white font-bold py-4 px-8 rounded shadow-lg hover:bg-red-900 transition flex items-center justify-center gap-2 text-lg"
+                    >
+                        <DownloadIcon className="w-6 h-6" />
+                        Generar y Descargar PDF Oficial
+                    </button>
+                 </div>
               </div>
             </div>
           </div>

@@ -1,318 +1,292 @@
-// PDF Generation utility - Exact copy from app.html
+import QRious from 'qrious';
+
 export function generatePDF(currentType, formData, studentList) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
-  const commonFolio = formData.commonFolio;
-  const commonFecha = formData.commonFecha;
+  const { commonFolio, validationDate } = formData;
+  
+  // Format dates
+  const today = new Date();
+  const options = { year: 'numeric', month: 'long', day: 'numeric' };
+  const todayStr = today.toLocaleDateString('es-ES', options);
+  const fechaEmision = `Francisco I. Madero, Hgo., a ${todayStr}`;
 
-  // Helper: Header
-  const addHeader = () => {
-    // Colors
-    const maroon = [105, 28, 50]; // #691C32
-    const gold = [188, 149, 92]; // #BC955C
+  // Helper Functions
+  const generateQR = (studentName, customFolio) => {
+    const qrData = `ENRLV-VALIDADO\nTipo: ${currentType.toUpperCase()}\nFolio: ${customFolio}\nFecha Emisión: ${todayStr}\nFecha Inasistencia: ${validationDate}\nAlumno: ${studentName}\nAprobado por: Coord. Docente`;
+    const qr = new QRious({ value: qrData, size: 150 });
+    return qr.toDataURL();
+  };
 
-    // Logos placeholders (Left)
-    doc.setFillColor(230, 230, 230);
-    // doc.rect(15, 10, 40, 15, 'F'); // Placeholder for SEP LOGO
+  const drawHeader = (yOffset = 0) => {
+    const maroon = [105, 28, 50];
     doc.setFontSize(8);
     doc.setTextColor(100);
-    doc.text("GOBIERNO DE MÉXICO", 15, 15);
-    doc.text("SEP", 15, 20);
+    doc.setFont("helvetica", "normal");
+    doc.text("GOBIERNO DE MÉXICO", 15, 15 + yOffset);
+    doc.text("SEP", 15, 20 + yOffset);
 
-    // Title Text (Right aligned roughly)
+    // Title Block (Right Aligned)
+    const x = 120;
+    let y = 15 + yOffset;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
     doc.setTextColor(100); // Dark Gray
 
-    let yPos = 15;
-    const rightX = 120;
-
-    doc.text(
-      "Subsecretaría de Educación Media Superior y Superior",
-      rightX,
-      yPos
-    );
-    yPos += 4;
-    doc.text(
-      "Dirección General de Formación y Superación Docente",
-      rightX,
-      yPos
-    );
-    yPos += 4;
-    doc.text("Dirección de Educación Normal", rightX, yPos);
-    yPos += 6;
+    doc.text("Subsecretaría de Educación Media Superior y Superior", x, y);
+    y += 4;
+    doc.text("Dirección General de Formación y Superación Docente", x, y);
+    y += 4;
+    doc.text("Dirección de Educación Normal", x, y);
+    y += 6;
 
     doc.setFontSize(10);
     doc.setTextColor(...maroon);
-    doc.text("Escuela Normal Rural \"Luis Villarreal\"", rightX, yPos);
-    yPos += 4;
+    doc.text('Escuela Normal Rural "Luis Villarreal"', x, y);
+    y += 4;
 
     doc.setFontSize(8);
     doc.setTextColor(0);
-    doc.text("C.C.T. 13DNL0007B", rightX, yPos);
+    doc.text("C.C.T. 13DNL0007B", x, y);
   };
 
-  const addFooter = () => {
-    const maroon = [105, 28, 50];
+  const drawFooter = (yOffset = 0, isCopia = false) => {
+    let y = 260 + yOffset;
+    if (yOffset > 0) y = 135 + yOffset; // Adjust for half-page layout (lower half)
+
     doc.setFontSize(7);
     doc.setTextColor(100);
-
-    let y = 260;
-    // Address from JUSTIF~2.pdf
+    doc.setFont("helvetica", "normal");
+    
+    // Address
     doc.text("Carretera Tepatepec-San Juan Tepa Km 2.", 15, y);
     y += 4;
     doc.text("Col. Lázaro Cárdenas (El Mexe)", 15, y);
     y += 4;
     doc.text("Francisco I. Madero Hgo. C.P. 42670", 15, y);
-    y += 6;
-
-    doc.text("mexe.luisv@gmail.com", 15, y);
     y += 4;
-    doc.text("Teléfono 772-165-2780", 15, y);
+    doc.text("mexe.luisv@gmail.com | Tel: 772-165-2780", 15, y);
 
-    // Bottom decorative bar
-    doc.setFillColor(...maroon);
-    doc.rect(0, 285, 210, 12, "F");
+    // Label Original/Copia
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(isCopia ? 150 : [105, 28, 50]);
+    doc.text(isCopia ? "ARCHIVO - COPIA" : "ALUMNO - ORIGINAL", 195, y, { align: "right" });
+
+    // Decorative Bar
+    y += 6;
+    doc.setFillColor(...[105, 28, 50]); // Maroon
+    doc.rect(0, y + 3, 210, 8, "F");
     doc.setFillColor(188, 149, 92); // Gold
-    doc.rect(0, 282, 210, 3, "F");
+    doc.rect(0, y, 210, 3, "F");
   };
 
-  const addSignature = (yPos) => {
+  const drawSignature = (yPos) => {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.setTextColor(0);
     doc.text("ATENTAMENTE", 105, yPos, { align: "center" });
-    yPos += 25;
-    doc.text("MTRA. ADELINA MENDOZA AGUILAR", 105, yPos, {
-      align: "center",
-    });
-    yPos += 5;
+    doc.text("MTRA. ADELINA MENDOZA AGUILAR", 105, yPos + 20, { align: "center" });
     doc.setFontSize(9);
-    doc.text("COORDINACIÓN DOCENTE", 105, yPos, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.text("COORDINACIÓN DOCENTE", 105, yPos + 25, { align: "center" });
   };
 
-  // --- DOCUMENT SPECIFIC CONTENT ---
+  // --- LOGIC PER TYPE ---
 
-  if (currentType === "individual") {
-    const nombre = (formData.nombre || "").toUpperCase();
-    const matricula = formData.matricula || "";
-    const semestre = formData.semestre || "";
-    const grupo = formData.grupo || "";
-    const fechas = formData.fechas || "";
-    const motivo = formData.motivo || "";
+  if (currentType === 'individual' || currentType === 'practica') {
+    // SHORT FORMAT: 1 Page PER Student involved (Original Top, Copy Bottom)
+    
+    // Convert to list for iteration (Practica has 1 "student" in formData, Individual has list)
+    let targets = [];
+    if (currentType === 'individual') {
+        targets = studentList;
+    } else {
+        // Practica
+        targets = [{
+            nombre: formData.alumno,
+            matricula: formData.pracMatricula,
+            semestre: formData.pracSemestre,
+            // For practica, other fields are in formData
+        }];
+    }
 
-    // Function to draw one instance (for original and copy)
-    const drawInstance = (offsetY) => {
-      // Header simulation for the sub-section
-      doc.setFontSize(8);
-      doc.setTextColor(0);
-      // Minimal header for the copy part if on same page
-      if (offsetY > 10) {
-        doc.line(10, offsetY, 200, offsetY); // Separator
-        offsetY += 10;
-      }
+    targets.forEach((student, index) => {
+        if (index > 0) doc.addPage(); // New page for each student
 
-      // Content
-      doc.setFontSize(10);
-      doc.text("EDUCACIÓN", 15, offsetY + 10);
-      doc.setFontSize(8);
-      doc.text("SECRETARIA DE EDUCACIÓN PÚBLICA", 15, offsetY + 15);
+        // --- DRAW HALF PAGE CONTENT (Reusable) ---
+        const drawHalfPage = (offsetY, isCopia) => {
+            // Cut line for copy
+            if (isCopia) {
+                doc.setDrawColor(200);
+                doc.setLineWidth(0.5);
+                doc.setLineDash([3, 3], 0);
+                doc.line(10, offsetY - 5, 200, offsetY - 5);
+                doc.setLineDash([]); // Reset
+            }
 
-      doc.setFontSize(10);
-      doc.text(commonFecha, 200, offsetY + 10, { align: "right" });
+            drawHeader(offsetY);
 
-      doc.setFont("helvetica", "bold");
-      doc.text(`FOLIO: ${commonFolio}`, 200, offsetY + 15, {
-        align: "right",
-      });
-      doc.text(`ENRLV/CD/J/${commonFolio}/2025`, 200, offsetY + 20, {
-        align: "right",
-      });
-      doc.text("Asunto: Justificante", 200, offsetY + 25, {
-        align: "right",
-      });
+            // Folio & Date
+            doc.setFontSize(9);
+            doc.setTextColor(0);
+            doc.setFont("helvetica", "normal");
+            doc.text(fechaEmision, 200, offsetY + 35, { align: "right" });
 
-      doc.text("DOCENTE TITULAR", 15, offsetY + 35);
-      doc.text("PRESENTE", 15, offsetY + 40);
+            doc.setFont("helvetica", "bold");
+            const folioText = `FOLIO: ${commonFolio} / 2026`;
+            doc.text(folioText, 200, offsetY + 40, { align: "right" });
+            
+            const oficioRef = `ENRLV/CD/${currentType === 'practica' ? '' : 'J/'}${commonFolio}/2026`;
+            doc.text(oficioRef, 200, offsetY + 45, { align: "right" });
 
-      doc.setFont("helvetica", "normal");
-      const bodyText = `Por medio del presente se hace de su conocimiento que la estudiante ${nombre} con matrícula ${matricula} de ${semestre} semestre grupo ${grupo} ${motivo} los días ${fechas}.`;
+            let y = offsetY + 55;
 
-      const splitText = doc.splitTextToSize(bodyText, 180);
-      doc.text(splitText, 15, offsetY + 50);
+            // Content Body
+            if (currentType === 'individual') {
+                doc.text("DOCENTE TITULAR", 15, y);
+                doc.text("PRESENTE", 15, y + 5);
+                y += 15;
 
-      doc.text(
-        "Agradezco su atención, quedo atenta ante cualquier duda.",
-        15,
-        offsetY + 50 + splitText.length * 5 + 5
-      );
+                doc.setFont("helvetica", "normal");
+                // Text for THIS specific student
+                const txt = `Por medio del presente se hace de su conocimiento que el/la estudiante ${student.nombre} con matrícula ${student.matricula} de ${student.semestre} semestre grupo ${student.grupo || ''}, ${formData.motivo} para los días ${formData.fechas}.`;
 
-      // Signature
-      doc.setFont("helvetica", "bold");
-      doc.text("ATENTAMENTE", 105, offsetY + 85, { align: "center" });
-      doc.text("MTRA. ADELINA MENDOZA AGUILAR", 105, offsetY + 110, {
-        align: "center",
-      });
-      doc.setFontSize(9);
-      doc.text("COORDINACIÓN DOCENTE", 105, offsetY + 115, {
-        align: "center",
-      });
+                const splitTxt = doc.splitTextToSize(txt, 180);
+                doc.text(splitTxt, 15, y, { align: "justify", maxWidth: 180 });
+                y += splitTxt.length * 5 + 5;
+
+                doc.text("Agradezco su atención, quedo atenta ante cualquier duda.", 15, y);
+                drawSignature(offsetY + 110);
+            
+            } else if (currentType === 'practica') {
+                const { director, escuela, atn, fechaIna } = formData;
+                
+                doc.text(director, 15, y);
+                y += 4;
+                doc.text(`DIRECTOR(A) DE LA ${escuela}`, 15, y);
+                y += 4;
+                doc.text("PRESENTE.", 15, y);
+                y += 8;
+                doc.text(`AT'N. ${atn} - DOCENTE TITULAR.`, 15, y);
+                y += 12;
+
+                doc.setFont("helvetica", "normal");
+                const txt = `La que suscribe Mtra. Adelina Mendoza Aguilar, le envío un cordial saludo, al mismo tiempo me permito comunicar a usted que el/la estudiante ${student.nombre}, con matrícula ${student.matricula} de ${student.semestre} Semestre, quien se encuentra en la institución que atinadamente dirige como practicante, presentó una situación que no le permitió asistir a práctica el día ${fechaIna}. De antemano agradezco la atención al presente para justificar su inasistencia.`;
+                
+                const splitTxt = doc.splitTextToSize(txt, 180);
+                doc.text(splitTxt, 15, y, { align: "justify", maxWidth: 180 });
+                drawSignature(offsetY + 115);
+            }
+
+            // QR Code
+            const qrImg = generateQR(student.nombre, `${commonFolio}-${index+1}`);
+            doc.addImage(qrImg, "PNG", 15, offsetY + 115, 22, 22);
+            doc.setFontSize(6);
+            doc.setTextColor(150);
+            doc.text("QR SEGURIDAD", 15, offsetY + 139);
+
+            drawFooter(offsetY - 125, isCopia); // Logic for footer Y adjusted inside
+        };
+
+        // Draw Top (Original)
+        drawHalfPage(0, false);
+        // Draw Bottom (Copia)
+        drawHalfPage(148, true);
+    });
+
+  } else {
+    // LONG FORMAT (Grupal / Masivo): Page 1 Original, Page 2 Copia
+    // These are single documents or lists, not per student.
+
+    const drawFullPage = (isCopia) => {
+        if (isCopia) doc.addPage();
+        
+        drawHeader();
+
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        let y = 45;
+        doc.text(fechaEmision, 200, y, { align: "right" });
+        y += 6;
+        doc.setFont("helvetica", "bold");
+        doc.text(`FOLIO: ${commonFolio} / 2026`, 200, y, { align: "right" });
+        doc.text(`ENRLV/CD/${currentType === 'masivo' ? '' : 'J/'}${commonFolio}/2026`, 200, y + 5, { align: "right" });
+
+        y += 20;
+
+        if (currentType === 'grupal') {
+             doc.text("DOCENTE TITULAR", 15, y);
+             doc.text("PRESENTE", 15, y + 5);
+             y += 15;
+
+             doc.setFont("helvetica", "normal");
+             const { fechaJust, horario, motivo } = formData;
+             const txt = `Por medio del presente se hace de su conocimiento la lista de estudiantes adjunta. Para la justificación del día ${fechaJust} en un horario de ${horario}, ${motivo}.`;
+             const split = doc.splitTextToSize(txt, 180);
+             doc.text(split, 15, y);
+             y += split.length * 5 + 5;
+
+             // Table
+             const headers = [["#", "MATRÍCULA", "NOMBRE", "SEM", "GPO"]];
+             const data = studentList.map((s, i) => [
+                 i + 1, s.matricula, s.nombre, s.semestre, s.grupo
+             ]);
+
+             doc.autoTable({
+                 startY: y,
+                 head: headers,
+                 body: data,
+                 theme: 'grid',
+                 headStyles: { fillColor: [105, 28, 50], fontSize: 8 },
+                 bodyStyles: { fontSize: 8 },
+                 margin: { left: 15, right: 15, bottom: 40 },
+             });
+
+             drawSignature(doc.lastAutoTable.finalY + 20);
+
+             // QR logic for list? Just generate one general QR
+             const qrImg = generateQR("LISTA GRUPAL", commonFolio);
+             doc.addImage(qrImg, "PNG", 15, doc.lastAutoTable.finalY + 20, 22, 22);
+
+        } else if (currentType === 'masivo') {
+             const { dirigido, cuerpo } = formData;
+             doc.text(dirigido, 15, y);
+             doc.text("PRESENTE", 15, y + 5);
+             y += 15;
+             doc.setFont("helvetica", "normal");
+
+             const split = doc.splitTextToSize(cuerpo, 180);
+             doc.text(split, 15, y, { align: "justify", maxWidth: 180 });
+             y += split.length * 6 + 15;
+             doc.text("Agradeciendo su atención, quedo de usted.", 15, y);
+
+             drawSignature(y + 30);
+             
+             const qrImg = generateQR("MASIVO", commonFolio);
+             doc.addImage(qrImg, "PNG", 15, y + 30, 22, 22);
+
+             // CCPs
+            doc.setFontSize(7);
+            doc.text("C.c.p Coordinación Administrativa.", 15, 240);
+            doc.text("C.c.p. Servicios escolares", 15, 244);
+            doc.text("C.c.p. Archivo", 15, 248);
+        }
+
+        drawFooter(0, isCopia);
     };
 
-    addHeader();
-    addFooter();
-    // Draw Original
-    drawInstance(40);
-
-    // Draw Copy (Half page)
-    // drawInstance(160); // Optional: If they want 2 per page like JUSTIFICANTE_0159.pdf
-  } else if (currentType === "grupal") {
-    addHeader();
-    addFooter();
-
-    const fechaJust = formData.fechaJust || "";
-    const horario = formData.horario || "";
-    const motivo = formData.motivo || "";
-
-    let y = 50;
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(commonFecha, 200, y, { align: "right" });
-    y += 5;
-    doc.setFont("helvetica", "bold");
-    doc.text(`FOLIO: ${commonFolio} / 2025`, 200, y, { align: "right" });
-
-    y += 15;
-    doc.text("DOCENTE TITULAR", 15, y);
-    y += 5;
-    doc.text("PRESENTE", 15, y);
-
-    y += 10;
-    doc.setFont("helvetica", "normal");
-    const intro = `Por medio del presente se hace de su conocimiento la lista de estudiantes. Para la justificación del día ${fechaJust} en un horario de ${horario}, ${motivo}.`;
-    const splitIntro = doc.splitTextToSize(intro, 180);
-    doc.text(splitIntro, 15, y);
-    y += splitIntro.length * 5 + 5;
-
-    // AutoTable
-    const headers = [["#", "MATRÍCULA", "NOMBRE", "SEMESTRE", "GRUPO"]];
-    const data = studentList.map((s, i) => [
-      i + 1,
-      s.matricula,
-      s.nombre,
-      s.semestre,
-      s.grupo,
-    ]);
-
-    doc.autoTable({
-      startY: y,
-      head: headers,
-      body: data,
-      theme: "grid",
-      headStyles: {
-        fillColor: [105, 28, 50],
-        textColor: 255,
-        fontSize: 8,
-        fontStyle: "bold",
-      },
-      bodyStyles: { fontSize: 8 },
-      margin: { left: 15, right: 15 },
-    });
-
-    addSignature(doc.lastAutoTable.finalY + 20);
-  } else if (currentType === "masivo") {
-    addHeader();
-    addFooter();
-
-    const dirigido = formData.dirigido || "";
-    const cuerpo = formData.cuerpo || "";
-    const fechaMas = formData.fechaMas || "";
-    const folioMas = formData.folioMas || "";
-
-    let y = 50;
-    doc.setFontSize(10);
-    doc.text(fechaMas, 200, y, { align: "right" });
-    y += 5;
-    doc.setFont("helvetica", "bold");
-    doc.text(folioMas, 200, y, { align: "right" });
-    doc.text("Asunto: El que se indica.", 200, y + 5, { align: "right" });
-
-    y += 20;
-    doc.text(dirigido, 15, y);
-    y += 5;
-    doc.text("PRESENTE", 15, y);
-
-    y += 15;
-    doc.setFont("helvetica", "normal");
-    const splitBody = doc.splitTextToSize(cuerpo, 180);
-    doc.text(splitBody, 15, y, { align: "justify", maxWidth: 180 });
-
-    y += splitBody.length * 6 + 10;
-    doc.text("Agradeciendo su atención queda de usted.", 15, y);
-
-    addSignature(y + 30);
-
-    // CCPs
-    doc.setFontSize(7);
-    doc.text("C.c.p Coordinación Administrativa.", 15, 240);
-    doc.text("C.c.p. Servicios escolares", 15, 244);
-    doc.text("C.c.p. Archivo", 15, 248);
-  } else if (currentType === "practica") {
-    addHeader();
-    addFooter();
-
-    const director = formData.director || "";
-    const escuela = formData.escuela || "";
-    const atn = formData.atn || "";
-    const alumno = formData.alumno || "";
-    const mat = formData.pracMatricula || "";
-    const sem = formData.pracSemestre || "";
-    const fechaIna = formData.fechaIna || "";
-
-    let y = 50;
-    doc.setFontSize(10);
-    doc.text(commonFecha, 200, y, { align: "right" });
-    y += 5;
-    doc.setFont("helvetica", "bold");
-    doc.text(`No. Oficio: ENRLV/CD/${commonFolio}/2025`, 200, y, {
-      align: "right",
-    });
-
-    y += 20;
-    doc.text(director, 15, y);
-    y += 5;
-    doc.text(`DIRECTOR DE LA ${escuela}`, 15, y);
-    y += 5;
-    doc.text("PRESENTE.", 15, y);
-
-    y += 10;
-    doc.text(`AT'N. ${atn}`, 15, y);
-    doc.text("DOCENTE TITULAR.", 15, y + 5);
-
-    y += 20;
-    doc.setFont("helvetica", "normal");
-    const text = `La que suscribe Mtra. Adelina Mendoza Aguilar, coordinadora docente de la Escuela Normal Rural Luis Villarreal, le envío un cordial saludo por este medio, al mismo tiempo me permito comunicar a usted que la estudiante ${alumno}, con matrícula ${mat} de ${sem.toLowerCase()} semestre quien se encuentra en la institución que atinadamente dirige, como docente en formación (practicante), presentó una situación de salud lo que no permitió asistir a práctica como se tenía programada el día ${fechaIna} del año en curso, de antemano agradezco la atención al presente para justificar la inasistencia del estudiante.`;
-
-    const splitText = doc.splitTextToSize(text, 180);
-    doc.text(splitText, 15, y, { align: "justify", maxWidth: 180 });
-
-    y += splitText.length * 6 + 10;
-    doc.text(
-      "Sin otro particular quedo a sus ordenes para cualquier duda y/o aclaración.",
-      15,
-      y
-    );
-
-    addSignature(y + 30);
+    drawFullPage(false); // Original
+    drawFullPage(true);  // Copia
   }
 
-  // Forzar nombre de archivo con método alternativo
+  // Force Download via Blob (Chrome Fix)
   const pdfBlob = doc.output('blob');
   const url = URL.createObjectURL(pdfBlob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${currentType}_generated.pdf`;
+  link.download = `ENRLV_${currentType.toUpperCase()}_FOLIO_${commonFolio}.pdf`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

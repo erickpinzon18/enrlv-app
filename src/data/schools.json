@@ -1,0 +1,17 @@
+[
+  {
+    "id": 1,
+    "dir": "MTRO. ANDRES VIGUERAS VELAZQUEZ",
+    "esc": "ESCUELA PRIMARIA ALVARO OBREGÓN"
+  },
+  {
+    "id": 2,
+    "dir": "MTRA. LAURA GOMEZ PEREZ",
+    "esc": "ESCUELA PRIMARIA BENITO JUAREZ"
+  },
+  {
+    "id": 3,
+    "dir": "MTRO. CARLOS RUIZ CORTINES",
+    "esc": "ESCUELA PRIMARIA EMILIANO ZAPATA"
+  }
+]
